@@ -1,4 +1,4 @@
-from reflex_chain_handler import trigger_reflex_chain
+from reflex_chain_handler_new import trigger_reflex_chain
 
 def allocate_power(target_module, priority_level="normal"):
     print(f"[SurgeCell] Allocating power to {target_module} at {priority_level} priority.")
