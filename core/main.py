@@ -18,3 +18,6 @@ if __name__ == "__main__":
     resolve_path()
     # Multi-AI reflex trigger
     allocate_power(["Goku", "Gohan","Vegeta", "Piccolo"], priority_level="high")
+from dfs_optimizer import optimize_lineup
+
+optimize_lineup()
