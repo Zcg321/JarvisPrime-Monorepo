@@ -1,3 +1,11 @@
 def vegeta_challenge():
     print("[Vegeta Engine] Challenger mode initiated.")
-    # Placeholder: critiques AI council decisions, sharpens entry/exit logic
+    # Contrarian Sniper Logic placeholder
+    apply_contrarian_logic()
+    sharpen_entry_exit()
+
+def apply_contrarian_logic():
+    print("[Vegeta Contrarian] Questioning council consensus...")
+
+def sharpen_entry_exit():
+    print("[Vegeta Sniper] Fine-tuning entry and exit points for precision...")
