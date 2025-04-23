@@ -1,4 +1,4 @@
-from ai.goku_engine import goku_boost from ai.gohan_engine import gohan_support from ai.vegeta_engine import vegeta_challenge from ai.piccolo_engine import piccolo_harmonize from logger import log_event from bankroll_ai import allocate_stake, adjust_aggression import random import requests import csv from dff_scraper import scrape_dff_csv
+from ai.goku_engine import goku_boost from ai.gohan_engine import gohan_support from ai.vegeta_engine import vegeta_challenge from ai.piccolo_engine import piccolo_harmonize from logger import log_event from bankroll_ai import allocate_stake, adjust_aggression from reflexive_deployment import register_logic, evaluate_logic import random import requests import csv from dff_scraper import scrape_dff_csv
 
 Fetch player data from DFF CSV
 
@@ -6,7 +6,7 @@ def fetch_csv_player_data(filepath): log_event("DFS Optimizer", "Loading player 
 
 Weighted logic mesh for lineup optimizers
 
-def standard_lineup_logic(player_pool): # Standard logic (current) lineup_slots = ["PG", "SG", "SF", "PF", "C", "G", "F", "UTIL"] salary_cap = 50000 lineup, current_salary = [], 0 flex_positions = {"G": ["PG", "SG"], "F": ["SF", "PF"], "UTIL": ["PG", "SG", "SF", "PF", "C"]}
+def standard_lineup_logic(player_pool): lineup_slots = ["PG", "SG", "SF", "PF", "C", "G", "F", "UTIL"] salary_cap = 50000 lineup, current_salary = [], 0 flex_positions = {"G": ["PG", "SG"], "F": ["SF", "PF"], "UTIL": ["PG", "SG", "SF", "PF", "C"]}
 
 candidates = player_pool.copy()
 random.shuffle(candidates)
@@ -23,15 +23,13 @@ for slot in lineup_slots:
 
 return lineup, current_salary
 
-def contrarian_lineup_logic(player_pool): # Contrarian variation (alternative logic) lineup, current_salary = standard_lineup_logic(player_pool) # Force one low-owned player if not any(p["ownership"] < 10 for p in lineup): low_owned = [p for p in player_pool if p["ownership"] < 10 and p not in lineup] if low_owned: highest_owned = max(lineup, key=lambda x: x["ownership"]) contrarian_player = random.choice(low_owned) current_salary -= highest_owned["salary"] current_salary += contrarian_player["salary"] lineup.remove(highest_owned) lineup.append(contrarian_player) return lineup, current_salary
+def contrarian_lineup_logic(player_pool): lineup, current_salary = standard_lineup_logic(player_pool) if not any(p["ownership"] < 10 for p in lineup): low_owned = [p for p in player_pool if p["ownership"] < 10 and p not in lineup] if low_owned: highest_owned = max(lineup, key=lambda x: x["ownership"]) contrarian_player = random.choice(low_owned) current_salary -= highest_owned["salary"] current_salary += contrarian_player["salary"] lineup.remove(highest_owned) lineup.append(contrarian_player) return lineup, current_salary
 
-def optimize_lineup(): log_event("DFS Optimizer", "Starting lineup optimization with weighted logic mesh...")
+def optimize_lineup(): log_event("DFS Optimizer", "Starting lineup optimization with weighted logic mesh and reflexive deployment...")
 
-# Scrape and load CSV player data
 scrape_dff_csv()
 player_pool = fetch_csv_player_data("projections.csv")
 
-# Council adjusts strategy
 goku_boost()
 gohan_support()
 vegeta_challenge()
@@ -46,17 +44,15 @@ for i in range(num_lineups):
     contest_type = random.choice(contest_types)
     log_event("DFS Optimizer", f"Lineup {i+1} - Stake: ${stake}, Contest: {contest_type}")
 
-    # Apply weighted mesh logic
     if contest_type == "GPP":
         lineup, current_salary = contrarian_lineup_logic(player_pool)
-        logic_weight = "Contrarian Logic (70%)"
+        logic_applied = "contrarian_logic"
     else:
         lineup, current_salary = standard_lineup_logic(player_pool)
-        logic_weight = "Standard Logic (90%)"
+        logic_applied = "standard_logic"
 
     avg_ownership = sum(p["ownership"] for p in lineup) / len(lineup)
 
-    # ROI simulation
     roi_lookup = {"GPP": {"aggressive": 2.5, "balanced": 1.5, "conservative": 0.5, "contrarian": 3.0}}
     risk_profile = "balanced"
     goku_boost(); risk_profile = "aggressive"
@@ -68,7 +64,16 @@ for i in range(num_lineups):
 
     adjust_aggression(profit)
 
-    all_lineups.append({"lineup": lineup, "salary": current_salary, "ownership": avg_ownership, "profit": profit, "logic_weight": logic_weight})
+    all_lineups.append({"lineup": lineup, "salary": current_salary, "ownership": avg_ownership, "profit": profit, "logic_applied": logic_applied})
+
+# Register logic variants with Reflexive Deployment
+profits_standard = sum(l["profit"] for l in all_lineups if l["logic_applied"] == "standard_logic")
+profits_contrarian = sum(l["profit"] for l in all_lineups if l["logic_applied"] == "contrarian_logic")
+
+register_logic("dfs", "standard_logic", {"profitability": profits_standard})
+register_logic("dfs", "contrarian_logic", {"profitability": profits_contrarian})
+
+evaluate_logic("dfs")
 
 # Post-contest review
 total_profit = sum(l["profit"] for l in all_lineups)
