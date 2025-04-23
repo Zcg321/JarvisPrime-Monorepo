@@ -1,11 +1,12 @@
+from logger import log_event
+
 def vegeta_challenge():
-    print("[Vegeta Engine] Challenger mode initiated.")
-    # Contrarian Sniper Logic placeholder
+    log_event("Vegeta Engine", "Challenger mode initiated.")
     apply_contrarian_logic()
     sharpen_entry_exit()
 
 def apply_contrarian_logic():
-    print("[Vegeta Contrarian] Questioning council consensus...")
+    log_event("Vegeta Contrarian", "Questioning council consensus...")
 
 def sharpen_entry_exit():
-    print("[Vegeta Sniper] Fine-tuning entry and exit points for precision...")
+    log_event("Vegeta Sniper", "Fine-tuning entry and exit points for precision...")
