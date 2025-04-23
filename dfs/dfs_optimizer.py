@@ -7,12 +7,12 @@ import random
 
 # Example player pool with projections and ownership
 player_pool = [
-    {"name": "PlayerA", "projection": 50, "ownership": 20},
-    {"name": "PlayerB", "projection": 45, "ownership": 35},
-    {"name": "PlayerC", "projection": 40, "ownership": 15},
-    {"name": "PlayerD", "projection": 55, "ownership": 10},
-    {"name": "PlayerE", "projection": 30, "ownership": 5},
-    {"name": "PlayerF", "projection": 60, "ownership": 40}
+    {"name": "PlayerA", "projection": 50, "ownership": 20, "salary": 9500, "position": "Guard"},
+    {"name": "PlayerB", "projection": 45, "ownership": 35, "salary": 8700, "position": "Forward"},
+    {"name": "PlayerC", "projection": 40, "ownership": 15, "salary": 7900, "position": "Center"},
+    {"name": "PlayerD", "projection": 55, "ownership": 10, "salary": 10200, "position": "Guard"},
+    {"name": "PlayerE", "projection": 30, "ownership": 5, "salary": 6800, "position": "Forward"},
+    {"name": "PlayerF", "projection": 60, "ownership": 40, "salary": 11000, "position": "Center"}
 ]
 
 def optimize_lineup():
