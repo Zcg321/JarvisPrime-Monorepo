@@ -16,4 +16,5 @@ if __name__ == "__main__":
     print("Jarvis Prime system initializing...")
     handle_evolution()
     resolve_path()
-    allocate_power("Goku", priority_level="high")
+    # Multi-AI reflex trigger
+    allocate_power(["Goku", "Gohan", "Vegeta", "Piccolo"], priority_level="high")
