@@ -24,4 +24,3 @@ log_event("Bankroll AI", f"Allocated Stake: ${stake}")
 return stake
 
 def adjust_aggression(profit): # Adjust aggression based on profit outcomes if profit > 0: bankroll_state["aggression_level"] += 0.1 log_event("Bankroll AI", "Increasing aggression.") else: bankroll_state["aggression_level"] = max(0.8, bankroll_state["aggression_level"] - 0.1) log_event("Bankroll AI", "Reducing aggression.")
-
