@@ -1,46 +1,31 @@
-from ai.goku_engine import goku_boost
-from ai.gohan_engine import gohan_support
-from ai.vegeta_engine import vegeta_challenge
-from ai.piccolo_engine import piccolo_harmonize
-from logger import log_event
-import random
+# Define DraftKings lineup slots
+lineup_slots = ["PG", "SG", "SF", "PF", "C", "G", "F", "UTIL"]
+salary_cap = 50000
+lineup = []
+current_salary = 0
 
-# Example player pool with projections and ownership
-player_pool = [
-    {"name": "PlayerA", "projection": 50, "ownership": 20, "salary": 9500, "position": "Guard"},
-    {"name": "PlayerB", "projection": 45, "ownership": 35, "salary": 8700, "position": "Forward"},
-    {"name": "PlayerC", "projection": 40, "ownership": 15, "salary": 7900, "position": "Center"},
-    {"name": "PlayerD", "projection": 55, "ownership": 10, "salary": 10200, "position": "Guard"},
-    {"name": "PlayerE", "projection": 30, "ownership": 5, "salary": 6800, "position": "Forward"},
-    {"name": "PlayerF", "projection": 60, "ownership": 40, "salary": 11000, "position": "Center"}
-]
+# Define eligible positions for flexible slots
+flex_positions = {
+    "G": ["PG", "SG"],
+    "F": ["SF", "PF"],
+    "UTIL": ["PG", "SG", "SF", "PF", "C"]
+}
 
-def optimize_lineup():
-    log_event("DFS Optimizer", "Starting lineup optimization with AI council...")
+# Shuffle candidates for randomness within council's risk selection
+random.shuffle(candidates)
 
-    # Council adjusts risk and exposure logic
-    risk_profile = "medium"
-    ownership_threshold = 30
+# Build lineup slot by slot
+for slot in lineup_slots:
+    for player in candidates:
+        if player in lineup:
+            continue  # Avoid duplicates
 
-    goku_boost()
-    risk_profile = "high"
+        eligible_positions = [slot] if slot in ["PG", "SG", "SF", "PF", "C"] else flex_positions[slot]
 
-    gohan_support()
-    risk_profile = "low" if risk_profile == "high" else risk_profile
+        if player["position"] in eligible_positions and (current_salary + player["salary"] <= salary_cap):
+            lineup.append(player)
+            current_salary += player["salary"]
+            break
 
-    vegeta_challenge()
-    ownership_threshold += 10  # Increase contrarian play
-
-    piccolo_harmonize()
-    ownership_threshold = min(ownership_threshold, 50)  # Cap exposure
-
-    # Select players based on adjusted risk/exposure
-    if risk_profile == "high":
-        lineup = sorted(player_pool, key=lambda x: x["projection"], reverse=True)[:5]
-    elif risk_profile == "low":
-        lineup = sorted(player_pool, key=lambda x: x["ownership"])[:5]
-    else:
-        lineup = random.sample(player_pool, 5)
-
-    log_event("DFS Optimizer", f"Final lineup: {lineup}")
-    return lineup
+# Final log
+log_event("DFS Optimizer", f"Final DraftKings lineup: {lineup}, Total Salary: {current_salary}")
