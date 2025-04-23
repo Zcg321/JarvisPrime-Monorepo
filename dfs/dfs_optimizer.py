@@ -3,29 +3,44 @@ from ai.gohan_engine import gohan_support
 from ai.vegeta_engine import vegeta_challenge
 from ai.piccolo_engine import piccolo_harmonize
 from logger import log_event
+import random
 
-# Example lineup data structure
-default_lineup = {
-    "players": ["PlayerA", "PlayerB", "PlayerC", "PlayerD", "PlayerE"],
-    "risk_profile": "medium",  # Options: low, medium, high
-    "ownership_exposure": 50  # Percent
-}
+# Example player pool with projections and ownership
+player_pool = [
+    {"name": "PlayerA", "projection": 50, "ownership": 20},
+    {"name": "PlayerB", "projection": 45, "ownership": 35},
+    {"name": "PlayerC", "projection": 40, "ownership": 15},
+    {"name": "PlayerD", "projection": 55, "ownership": 10},
+    {"name": "PlayerE", "projection": 30, "ownership": 5},
+    {"name": "PlayerF", "projection": 60, "ownership": 40}
+]
 
-def optimize_lineup(data=default_lineup):
+def optimize_lineup():
     log_event("DFS Optimizer", "Starting lineup optimization with AI council...")
 
-    # Council modifies lineup attributes
+    # Council adjusts risk and exposure logic
+    risk_profile = "medium"
+    ownership_threshold = 30
+
     goku_boost()
-    data["risk_profile"] = "high"
+    risk_profile = "high"
 
     gohan_support()
-    data["risk_profile"] = "low" if data["risk_profile"] == "high" else data["risk_profile"]
+    risk_profile = "low" if risk_profile == "high" else risk_profile
 
     vegeta_challenge()
-    data["ownership_exposure"] += 10
+    ownership_threshold += 10  # Increase contrarian play
 
     piccolo_harmonize()
-    data["ownership_exposure"] = min(data["ownership_exposure"], 70)  # Cap exposure
+    ownership_threshold = min(ownership_threshold, 50)  # Cap exposure
 
-    log_event("DFS Optimizer", f"Optimized lineup: {data}")
-    return data
+    # Select players based on adjusted risk/exposure
+    if risk_profile == "high":
+        lineup = sorted(player_pool, key=lambda x: x["projection"], reverse=True)[:5]
+    elif risk_profile == "low":
+        lineup = sorted(player_pool, key=lambda x: x["ownership"])[:5]
+    else:
+        lineup = random.sample(player_pool, 5)
+
+    log_event("DFS Optimizer", f"Final lineup: {lineup}")
+    return lineup
