@@ -17,4 +17,4 @@ if __name__ == "__main__":
     handle_evolution()
     resolve_path()
     # Multi-AI reflex trigger
-    allocate_power(["Goku", "Gohan", "Vegeta", "Piccolo"], priority_level="high")
+    allocate_power(["Goku", "Gohan","Vegeta", "Piccolo"], priority_level="high")
