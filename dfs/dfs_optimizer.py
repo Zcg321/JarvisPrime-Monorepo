@@ -4,7 +4,28 @@ Fetch player data from DFF CSV
 
 def fetch_csv_player_data(filepath): log_event("DFS Optimizer", "Loading player data from CSV...") player_data = [] try: with open(filepath, mode='r') as file: reader = csv.DictReader(file) for row in reader: player_data.append({ "name": row["Player"], "position": row["POS"], "salary": int(row["SALARY"]), "projection": float(row["FPTS"]), "ownership": random.uniform(5, 30)  # Placeholder for ownership (replace with scraped) }) except Exception as e: log_event("DFS Optimizer", f"CSV load failed: {e}") return player_data
 
-def optimize_lineup(): log_event("DFS Optimizer", "Starting lineup optimization with AI council...")
+Weighted logic mesh for lineup optimizers
+
+def standard_lineup_logic(player_pool): # Standard logic (current) lineup_slots = ["PG", "SG", "SF", "PF", "C", "G", "F", "UTIL"] salary_cap = 50000 lineup, current_salary = [], 0 flex_positions = {"G": ["PG", "SG"], "F": ["SF", "PF"], "UTIL": ["PG", "SG", "SF", "PF", "C"]}
+
+candidates = player_pool.copy()
+random.shuffle(candidates)
+
+for slot in lineup_slots:
+    for player in candidates:
+        if player in lineup:
+            continue
+        eligible_positions = [slot] if slot in ["PG", "SG", "SF", "PF", "C"] else flex_positions[slot]
+        if player["position"] in eligible_positions and (current_salary + player["salary"] <= salary_cap):
+            lineup.append(player)
+            current_salary += player["salary"]
+            break
+
+return lineup, current_salary
+
+def contrarian_lineup_logic(player_pool): # Contrarian variation (alternative logic) lineup, current_salary = standard_lineup_logic(player_pool) # Force one low-owned player if not any(p["ownership"] < 10 for p in lineup): low_owned = [p for p in player_pool if p["ownership"] < 10 and p not in lineup] if low_owned: highest_owned = max(lineup, key=lambda x: x["ownership"]) contrarian_player = random.choice(low_owned) current_salary -= highest_owned["salary"] current_salary += contrarian_player["salary"] lineup.remove(highest_owned) lineup.append(contrarian_player) return lineup, current_salary
+
+def optimize_lineup(): log_event("DFS Optimizer", "Starting lineup optimization with weighted logic mesh...")
 
 # Scrape and load CSV player data
 scrape_dff_csv()
@@ -20,50 +41,20 @@ num_lineups = 5
 all_lineups = []
 
 for i in range(num_lineups):
-    # Use Bankroll AI for stake sizing
     stake = allocate_stake()
-
-    # Council-driven contest type
     contest_types = ["GPP", "Single-Entry", "3-Max", "Cash", "Satellite"]
     contest_type = random.choice(contest_types)
     log_event("DFS Optimizer", f"Lineup {i+1} - Stake: ${stake}, Contest: {contest_type}")
 
-    # DraftKings lineup logic
-    lineup_slots = ["PG", "SG", "SF", "PF", "C", "G", "F", "UTIL"]
-    salary_cap = 50000
-    lineup, current_salary = [], 0
-    flex_positions = {"G": ["PG", "SG"], "F": ["SF", "PF"], "UTIL": ["PG", "SG", "SF", "PF", "C"]}
+    # Apply weighted mesh logic
+    if contest_type == "GPP":
+        lineup, current_salary = contrarian_lineup_logic(player_pool)
+        logic_weight = "Contrarian Logic (70%)"
+    else:
+        lineup, current_salary = standard_lineup_logic(player_pool)
+        logic_weight = "Standard Logic (90%)"
 
-    candidates = player_pool.copy()
-    random.shuffle(candidates)
-
-    for slot in lineup_slots:
-        for player in candidates:
-            if player in lineup:
-                continue
-            eligible_positions = [slot] if slot in ["PG", "SG", "SF", "PF", "C"] else flex_positions[slot]
-            if player["position"] in eligible_positions and (current_salary + player["salary"] <= salary_cap):
-                lineup.append(player)
-                current_salary += player["salary"]
-                break
-
-    # Ownership balancing (auto-rebuild if chalky)
-    ownership_threshold = 25.0
     avg_ownership = sum(p["ownership"] for p in lineup) / len(lineup)
-    if avg_ownership > ownership_threshold:
-        log_event("DFS Optimizer", f"Rebuilding lineup {i+1} (ownership {avg_ownership:.2f}%)")
-        continue
-
-    # Contrarian logic (force one low-owned player)
-    if not any(p["ownership"] < 10 for p in lineup):
-        low_owned = [p for p in candidates if p["ownership"] < 10 and p not in lineup]
-        if low_owned:
-            highest_owned = max(lineup, key=lambda x: x["ownership"])
-            contrarian_player = random.choice(low_owned)
-            current_salary -= highest_owned["salary"]
-            current_salary += contrarian_player["salary"]
-            lineup.remove(highest_owned)
-            lineup.append(contrarian_player)
 
     # ROI simulation
     roi_lookup = {"GPP": {"aggressive": 2.5, "balanced": 1.5, "conservative": 0.5, "contrarian": 3.0}}
@@ -77,7 +68,7 @@ for i in range(num_lineups):
 
     adjust_aggression(profit)
 
-    all_lineups.append({"lineup": lineup, "salary": current_salary, "ownership": avg_ownership, "profit": profit})
+    all_lineups.append({"lineup": lineup, "salary": current_salary, "ownership": avg_ownership, "profit": profit, "logic_weight": logic_weight})
 
 # Post-contest review
 total_profit = sum(l["profit"] for l in all_lineups)
