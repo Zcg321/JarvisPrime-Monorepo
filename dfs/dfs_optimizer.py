@@ -28,4 +28,4 @@ for slot in lineup_slots:
             break
 
 # Final log
-log_event("DFS Optimizer", f"Final DraftKings lineup: {lineup}, Total Salary: {current_salary}")
+log_event("DFS Optimizer", f"Final DraftKings lineup: {lineup}, Total Salary:{current_salary}")
