@@ -1,4 +1,4 @@
-from ai.goku_engine import goku_boost from ai.gohan_engine import gohan_support from ai.vegeta_engine import vegeta_challenge from ai.piccolo_engine import piccolo_harmonize from logger import log_event import random import requests import csv from dff_scraper import scrape_dff_csv
+from ai.goku_engine import goku_boost from ai.gohan_engine import gohan_support from ai.vegeta_engine import vegeta_challenge from ai.piccolo_engine import piccolo_harmonize from logger import log_event from bankroll_ai import allocate_stake, adjust_aggression import random import requests import csv from dff_scraper import scrape_dff_csv
 
 Fetch player data from DFF CSV
 
@@ -16,24 +16,12 @@ gohan_support()
 vegeta_challenge()
 piccolo_harmonize()
 
-# Bankroll management
-total_bankroll = 500
-allocated_bankroll = 0
 num_lineups = 5
 all_lineups = []
 
-council_state = {"aggression_level": 1.0}
-
 for i in range(num_lineups):
-    # Dynamic stake sizing
-    base_stake_percent = 5
-    stake = total_bankroll * (base_stake_percent / 100)
-    goku_boost(); stake *= 1.5
-    gohan_support(); stake *= 0.8
-    vegeta_challenge();
-    if random.random() < 0.3: stake *= 1.2
-    piccolo_harmonize(); stake = min(stake, total_bankroll * 0.1)
-    stake = max(1, round(stake * council_state["aggression_level"]))
+    # Use Bankroll AI for stake sizing
+    stake = allocate_stake()
 
     # Council-driven contest type
     contest_types = ["GPP", "Single-Entry", "3-Max", "Cash", "Satellite"]
@@ -86,6 +74,8 @@ for i in range(num_lineups):
     variance = random.uniform(0.8, 1.2)
     adjusted_roi = roi * variance
     profit = stake * adjusted_roi - stake
+
+    adjust_aggression(profit)
 
     all_lineups.append({"lineup": lineup, "salary": current_salary, "ownership": avg_ownership, "profit": profit})
 
