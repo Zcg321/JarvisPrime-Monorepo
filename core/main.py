@@ -16,4 +16,4 @@ if __name__ == "__main__":
     print("Jarvis Prime system initializing...")
     handle_evolution()
     resolve_path()
-    allocate_power("Core Systems", priority_level="high")
+    allocate_power("Goku", priority_level="high")
