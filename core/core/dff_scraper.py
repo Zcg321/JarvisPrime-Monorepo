@@ -25,4 +25,4 @@ def scrape_dff_csv():
         else:
             log_event("DFF Scraper", "CSV link not found.")
     except Exception as e:
-        log_event("DFF Scraper", f"Scrape failed: {e}")
+        log_event("DFF Scraper", f"Scrape  failed: {e}")
