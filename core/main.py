@@ -1,23 +1,20 @@
-# === JARVIS PRIME MAIN BOOTSTRAP ===
+from dfs_optimizer import optimize_lineup from trade_scoring_engine import score_trade, post_trade_review from logger import log_event
 
-import os, sys
+def view_logs(): try: with open("jarvis_logs.txt", "r") as file: logs = file.read() print(logs) except FileNotFoundError: print("No logs found.")
 
-# === PATH SETUP ===
-CURRENT_DIR = os.path.dirname(os.path.abspath(__file__))
-CORE_PATH = os.path.join(CURRENT_DIR)
-sys.path.append(CORE_PATH)
+def jarvis_menu(): print("=== Jarvis Prime Menu ===") print("1. Run DFS Optimizer") print("2. Run Trade Scoring (Batch 5 Trades)") print("3. View Logs")
 
-# === CORE MODULES ===
-from evolution_handler import handle_evolution
-from goal_pathfinder_handler import resolve_path
-from surgecell_handler import allocate_power
+choice = input("Select an option: ")
 
-if __name__ == "__main__":
-    print("Jarvis Prime system initializing...")
-    handle_evolution()
-    resolve_path()
-    # Multi-AI reflex trigger
-    allocate_power(["Goku", "Gohan","Vegeta", "Piccolo"], priority_level="high")
-from dfs_optimizer import optimize_lineup
+if choice == "1":
+    optimize_lineup()
+elif choice == "2":
+    trades = [score_trade({}) for _ in range(5)]
+    post_trade_review(trades)
+elif choice == "3":
+    view_logs()
+else:
+    print("Invalid choice.")
 
-optimize_lineup()
+if name == "main": jarvis_menu()
+
