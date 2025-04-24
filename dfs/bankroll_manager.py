@@ -24,4 +24,4 @@ def manage_bankroll(current_balance, risk_level="medium", contest_type="GPP"):
     return stake
 
 # Example usage:
-# manage_bankroll(1000, risk_level=\"aggressive\", contest_type=\"Cash\")
+# manage_bankroll(1000, risk_level="aggressive", contest_type="Cash")
