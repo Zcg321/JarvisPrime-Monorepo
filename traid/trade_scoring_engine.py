@@ -1,3 +1,5 @@
+Trade Scoring Engine – Fully Stitched with Reflexive Deployment and Full Logic Mesh
+
 from ai.goku_engine import goku_boost from ai.gohan_engine import gohan_support from ai.vegeta_engine import vegeta_challenge from ai.piccolo_engine import piccolo_harmonize from logger import log_event from bankroll_ai import allocate_stake, adjust_aggression from reflexive_deployment import register_logic, evaluate_logic import random
 
 council_state = {"aggression_level": 1.0}
@@ -7,6 +9,8 @@ Weighted logic mesh for trade scoring
 def standard_trade_logic(): base_score = random.randint(40, 60) goku_boost(); base_score += 10 gohan_support(); base_score -= 5 vegeta_challenge(); base_score -= random.randint(0, 10) piccolo_harmonize(); base_score = max(min(base_score, 100), 0) return base_score
 
 def contrarian_trade_logic(): base_score = random.randint(30, 70) goku_boost(); base_score += random.randint(5, 15) vegeta_challenge(); base_score -= random.randint(5, 15) piccolo_harmonize(); base_score = max(min(base_score, 100), 0) return base_score
+
+Score individual trade
 
 def score_trade(trade_data): log_event("Trade Scoring Engine", "Scoring trade with weighted logic mesh and reflexive deployment...")
 
@@ -34,13 +38,36 @@ adjust_aggression(profit)
 log_event("Trade Scoring Engine", f"Market: {market_condition}, Score: {base_score}, Stake: ${stake}, Profit: ${profit:.2f}, Logic Applied: {logic_applied}")
 return {"score": base_score, "stake": stake, "profit": profit, "logic_applied": logic_applied}
 
+Post-trade review with reflexive deployment
+
 def post_trade_review(trades): total_profit = sum(t["profit"] for t in trades) avg_profit = total_profit / len(trades) if trades else 0 log_event("Trade Review", f"Total Profit: ${total_profit:.2f}, Avg Profit: ${avg_profit:.2f}")
 
 profits_standard = sum(t["profit"] for t in trades if t["logic_applied"] == "standard_trade_logic")
 profits_contrarian = sum(t["profit"] for t in trades if t["logic_applied"] == "contrarian_trade_logic")
 
-register_logic("traid", "standard_trade_logic", {"profitability": profits_standard})
-register_logic("traid", "contrarian_trade_logic", {"profitability": profits_contrarian})
+# Mock metrics for reflexive deployment (replace with real sandbox results)
+metrics_standard = {
+    "profitability": profits_standard,
+    "variance": random.uniform(0.2, 0.5),
+    "consistency": random.uniform(0.7, 1.0),
+    "drawdown": random.uniform(0.05, 0.15),
+    "sharpe_ratio": random.uniform(1.0, 2.0),
+    "edge_discovery": random.uniform(0.1, 0.5),
+    "deployment_win_rate": random.uniform(0.6, 0.9)
+}
+
+metrics_contrarian = {
+    "profitability": profits_contrarian,
+    "variance": random.uniform(0.3, 0.6),
+    "consistency": random.uniform(0.5, 0.9),
+    "drawdown": random.uniform(0.08, 0.2),
+    "sharpe_ratio": random.uniform(0.8, 1.8),
+    "edge_discovery": random.uniform(0.3, 0.7),
+    "deployment_win_rate": random.uniform(0.5, 0.85)
+}
+
+register_logic("traid", "standard_trade_logic", metrics_standard)
+register_logic("traid", "contrarian_trade_logic", metrics_contrarian)
 
 evaluate_logic("traid")
 
