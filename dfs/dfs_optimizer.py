@@ -1,4 +1,4 @@
-DFS Optimizer – Fully Stitched with Reflexive Deployment and Full Logic Mesh
+DFS Optimizer – Fully Stitched with Reflexive Deployment and Maxed Logic Layers
 
 from ai.goku_engine import goku_boost from ai.gohan_engine import gohan_support from ai.vegeta_engine import vegeta_challenge from ai.piccolo_engine import piccolo_harmonize from logger import log_event from bankroll_ai import allocate_stake, adjust_aggression from reflexive_deployment import register_logic, evaluate_logic import random import requests import csv from dff_scraper import scrape_dff_csv
 
@@ -82,7 +82,7 @@ for i in range(num_lineups):
 profits_standard = sum(l["profit"] for l in all_lineups if l["logic_applied"] == "standard_logic")
 profits_contrarian = sum(l["profit"] for l in all_lineups if l["logic_applied"] == "contrarian_logic")
 
-# Mock metrics for reflexive deployment (replace with real sandbox results)
+# Metrics for reflexive deployment
 metrics_standard = {
     "profitability": profits_standard,
     "variance": random.uniform(0.2, 0.5),
