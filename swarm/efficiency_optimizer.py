@@ -1,36 +1,35 @@
-Efficiency Optimizer – Fully Stitched with Cooling, Degradation, and Reflexive Adjustments
+from logger import log_event
+import random
 
-from logger import log_event import random
+def optimize_efficiency(current_hash_rate, cycle_count=1):
+    log_event("Efficiency Optimizer", "Optimizing mining efficiency...")
 
-Optimize mining efficiency with reflexive cooling and degradation logic
+    # Base energy target based on hash rate ranges
+    if current_hash_rate > 90:
+        energy_target = random.uniform(10, 12)
+    elif current_hash_rate < 60:
+        energy_target = random.uniform(5, 7)
+    else:
+        energy_target = random.uniform(7, 10)
 
-def optimize_efficiency(current_hash_rate, cycle_count=1): log_event("Efficiency Optimizer", "Optimizing mining efficiency...")
+    # Cooling efficiency curve (higher hash rate reduces cooling effectiveness)
+    cooling_penalty = 1 + ((current_hash_rate - 60) / 100) * 0.05 if current_hash_rate > 60 else 1
+    adjusted_energy = energy_target * cooling_penalty
 
-# Base energy target based on hash rate ranges
-if current_hash_rate > 90:
-    energy_target = random.uniform(10, 12)
-elif current_hash_rate < 60:
-    energy_target = random.uniform(5, 7)
-else:
-    energy_target = random.uniform(7, 10)
+    # Hardware degradation (aggressive cycles increase energy cost over time)
+    degradation_factor = 1 + (cycle_count / 100) * 0.02  # 2% energy increase per 100 cycles
+    final_energy = adjusted_energy * degradation_factor
 
-# Cooling efficiency curve (higher hash rate reduces cooling effectiveness)
-cooling_penalty = 1 + ((current_hash_rate - 60) / 100) * 0.05 if current_hash_rate > 60 else 1
-adjusted_energy = energy_target * cooling_penalty
+    # Override trigger if efficiency drops too low
+    if final_energy > 15:
+        log_event("Efficiency Optimizer", "Override triggered: Efficiency degraded. Initiating cooldown or reroute.")
+        # Optionally reroute tasks or adjust behavior
+        cooldown_or_reroute()
 
-# Hardware degradation (aggressive cycles increase energy cost over time)
-degradation_factor = 1 + (cycle_count / 100) * 0.02  # 2% energy increase per 100 cycles
-final_energy = adjusted_energy * degradation_factor
+    # Memory hook: Future Tool-Builder AI logs energy trends
+    log_event("Efficiency Optimizer", f"Target Energy: {energy_target:.2f}, Cooling Penalty: {cooling_penalty:.2f}, Degradation Factor: {degradation_factor:.2f}, Final Energy: {final_energy:.2f}")
+    return final_energy
 
-# Override trigger if efficiency drops too low
-if final_energy > 15:
-    log_event("Efficiency Optimizer", "Override triggered: Efficiency degraded. Initiating cooldown or reroute.")
-
-# Memory hook: Future Tool-Builder AI logs energy trends
-log_event("Efficiency Optimizer", f"Target Energy: {energy_target:.2f}, Cooling Penalty: {cooling_penalty:.2f}, Degradation Factor: {degradation_factor:.2f}, Final Energy: {final_energy:.2f}")
-return final_energy
-
-Example usage:
-
-optimize_efficiency(current_hash_rate=85, cycle_count=50)
-
+def cooldown_or_reroute():
+    # Placeholder for future logic to handle system cooldown or rerouting
+    log_event("Efficiency Optimizer", "Cooling down system or rerouting tasks...")
