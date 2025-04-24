@@ -1,4 +1,4 @@
-Trade Scoring Engine – Fully Stitched with Reflexive Deployment and Full Logic Mesh
+Trade Scoring Engine – Fully Stitched with Reflexive Deployment and Maxed Logic Layers
 
 from ai.goku_engine import goku_boost from ai.gohan_engine import gohan_support from ai.vegeta_engine import vegeta_challenge from ai.piccolo_engine import piccolo_harmonize from logger import log_event from bankroll_ai import allocate_stake, adjust_aggression from reflexive_deployment import register_logic, evaluate_logic import random
 
@@ -6,9 +6,9 @@ council_state = {"aggression_level": 1.0}
 
 Weighted logic mesh for trade scoring
 
-def standard_trade_logic(): base_score = random.randint(40, 60) goku_boost(); base_score += 10 gohan_support(); base_score -= 5 vegeta_challenge(); base_score -= random.randint(0, 10) piccolo_harmonize(); base_score = max(min(base_score, 100), 0) return base_score
+def standard_trade_logic(): base_score = random.randint(40, 60) goku_boost(council_state["aggression_level"]); base_score += 10 gohan_support(council_state["aggression_level"]); base_score -= 5 vegeta_challenge(); base_score -= random.randint(0, 10) piccolo_harmonize(); base_score = max(min(base_score, 100), 0) return base_score
 
-def contrarian_trade_logic(): base_score = random.randint(30, 70) goku_boost(); base_score += random.randint(5, 15) vegeta_challenge(); base_score -= random.randint(5, 15) piccolo_harmonize(); base_score = max(min(base_score, 100), 0) return base_score
+def contrarian_trade_logic(): base_score = random.randint(30, 70) goku_boost(council_state["aggression_level"]); base_score += random.randint(5, 15) vegeta_challenge(); base_score -= random.randint(5, 15) piccolo_harmonize(); base_score = max(min(base_score, 100), 0) return base_score
 
 Score individual trade
 
@@ -26,8 +26,8 @@ else:
 
 roi_lookup = {"aggressive": 2.0, "balanced": 1.5, "conservative": 1.0}
 risk_profile = "balanced"
-goku_boost(); risk_profile = "aggressive"
-gohan_support(); risk_profile = "conservative" if risk_profile == "aggressive" else risk_profile
+goku_boost(council_state["aggression_level"]); risk_profile = "aggressive"
+gohan_support(council_state["aggression_level"]); risk_profile = "conservative" if risk_profile == "aggressive" else risk_profile
 roi = roi_lookup[risk_profile]
 variance = random.uniform(0.8, 1.2)
 adjusted_roi = roi * variance
@@ -45,7 +45,6 @@ def post_trade_review(trades): total_profit = sum(t["profit"] for t in trades) a
 profits_standard = sum(t["profit"] for t in trades if t["logic_applied"] == "standard_trade_logic")
 profits_contrarian = sum(t["profit"] for t in trades if t["logic_applied"] == "contrarian_trade_logic")
 
-# Mock metrics for reflexive deployment (replace with real sandbox results)
 metrics_standard = {
     "profitability": profits_standard,
     "variance": random.uniform(0.2, 0.5),
