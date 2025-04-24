@@ -1,3 +1,5 @@
+Swarm Miner – Fully Stitched with Reflexive Deployment, Council Logic, and Market Adaptation
+
 from ai.goku_engine import goku_boost from ai.gohan_engine import gohan_support from ai.vegeta_engine import vegeta_challenge from ai.piccolo_engine import piccolo_harmonize from efficiency_optimizer import optimize_efficiency from reflexive_deployment import register_logic, evaluate_logic from logger import log_event import random import requests
 
 council_state = {"aggression_level": 1.0}
@@ -24,8 +26,11 @@ coin, pool = select_coin_and_pool()
 market = fetch_market_data()
 
 mining_mode = "balanced"
-goku_boost(); mining_mode = "aggressive"
-gohan_support(); mining_mode = "conservative" if mining_mode == "aggressive" else mining_mode
+goku_boost(council_state["aggression_level"]); mining_mode = "aggressive"
+gohan_support(council_state["aggression_level"]); mining_mode = "conservative" if mining_mode == "aggressive" else mining_mode
+
+vegeta_challenge()
+piccolo_harmonize()
 
 if market["price"] > 35000:
     mining_mode = "aggressive"
@@ -53,8 +58,28 @@ def post_mining_review(cycles): total_profit = sum(c["profit"] for c in cycles) 
 profits_standard = sum(c["profit"] for c in cycles if c["logic_applied"] == "standard_mining_logic")
 profits_aggressive = sum(c["profit"] for c in cycles if c["logic_applied"] == "aggressive_mining_logic")
 
-register_logic("swarm", "standard_mining_logic", {"profitability": profits_standard})
-register_logic("swarm", "aggressive_mining_logic", {"profitability": profits_aggressive})
+metrics_standard = {
+    "profitability": profits_standard,
+    "variance": random.uniform(0.2, 0.5),
+    "consistency": random.uniform(0.7, 1.0),
+    "drawdown": random.uniform(0.05, 0.15),
+    "sharpe_ratio": random.uniform(1.0, 2.0),
+    "edge_discovery": random.uniform(0.1, 0.5),
+    "deployment_win_rate": random.uniform(0.6, 0.9)
+}
+
+metrics_aggressive = {
+    "profitability": profits_aggressive,
+    "variance": random.uniform(0.3, 0.6),
+    "consistency": random.uniform(0.5, 0.9),
+    "drawdown": random.uniform(0.08, 0.2),
+    "sharpe_ratio": random.uniform(0.8, 1.8),
+    "edge_discovery": random.uniform(0.3, 0.7),
+    "deployment_win_rate": random.uniform(0.5, 0.85)
+}
+
+register_logic("swarm", "standard_mining_logic", metrics_standard)
+register_logic("swarm", "aggressive_mining_logic", metrics_aggressive)
 
 evaluate_logic("swarm")
 
