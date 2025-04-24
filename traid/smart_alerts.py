@@ -12,4 +12,4 @@ def trigger_alert(trade_data):
     elif score >= 50:
         log_event("Smart Alerts", f"NOTICE: Moderate-confidence trade signal. Score: {score}")
     else:
-        log_event("Smart Alerts", f"PASS: Low-confidence trade signal. Score: {score}")
+       log_event("Smart Alerts", f"PASS: Low-confidence trade signal. Score: {score}")
