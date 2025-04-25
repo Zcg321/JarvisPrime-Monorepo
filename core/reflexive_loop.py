@@ -3,6 +3,7 @@
 import random
 import time
 import threading
+from data_intake import generate_metrics_from_data
 
 # === SurgeCell Lite ===
 def surgecell_allocate(task):
@@ -43,22 +44,8 @@ class ReflexiveLoop:
         self.metrics = {}
         self.running = True
 
-    def generate_metrics(self):
-        profit = random.uniform(10, 100)
-        metrics = {
-            "profitability": profit,
-            "variance": random.uniform(0.2, 0.5),
-            "consistency": random.uniform(0.7, 1.0),
-            "drawdown": random.uniform(0.05, 0.15),
-            "sharpe_ratio": random.uniform(1.0, 2.0),
-            "edge_discovery": random.uniform(0.1, 0.5),
-            "deployment_win_rate": random.uniform(0.6, 0.9)
-        }
-        # Council adjustments
-        metrics = gohan_support(metrics)
-        metrics = vegeta_challenge(metrics)
-        metrics = piccolo_harmonize(metrics)
-        return metrics
+  def generate_metrics(self):
+    return generate_metrics_from_data()
 
     def loop(self):
         print("[Jarvis] Reflexive Loop Core Activated.")
