@@ -1,4 +1,4 @@
-from logger import log_event
+from core.logger import log_event
 
 def manage_bankroll(current_balance, risk_level="medium", contest_type="GPP"):
     log_event("Bankroll Manager", f"Managing bankroll. Balance: ${current_balance}, Risk: {risk_level}, Contest: {contest_type}")
