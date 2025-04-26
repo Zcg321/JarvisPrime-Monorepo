@@ -5,13 +5,18 @@ import random
 from datetime import datetime
 import json
 import os
+import time
+
+print("Boot sequence start...")
 
 SALARY_CAP = 50000
 POSITIONS = ['PG', 'SG', 'SF', 'PF', 'C', 'G', 'F', 'UTIL']
 CSV_PATH = '/home/zcg123/jarvisprime/JarvisPrime/data/csv_sources/'
 SALARY_LOG_PATH = '/home/zcg123/jarvisprime/JarvisPrime/data/salary_logs/'
 
-# === ESPN Slate Scraper ===
+os.makedirs(SALARY_LOG_PATH, exist_ok=True)
+
+# === Slate Scrapers ===
 def get_espn_slate():
     print("\nScraping ESPN for today's slate...")
     try:
@@ -35,7 +40,6 @@ def get_espn_slate():
     except:
         return get_rotowire_slate()
 
-# === Rotowire Slate Scraper ===
 def get_rotowire_slate():
     print("Scraping Rotowire for today's slate...")
     try:
@@ -52,7 +56,6 @@ def get_rotowire_slate():
     except:
         return manual_slate_selection()
 
-# === Manual Slate Selection ===
 def manual_slate_selection():
     teams = ['ATL', 'BOS', 'BRK', 'CHA', 'CHI', 'CLE', 'DAL', 'DEN', 'DET', 'GSW',
              'HOU', 'IND', 'LAC', 'LAL', 'MEM', 'MIA', 'MIL', 'MIN', 'NOP', 'NYK',
@@ -67,11 +70,8 @@ def manual_slate_selection():
 def load_csv_players():
     sources = [
         {'file': 'nba_roster_23_24_reg.csv', 'season': '23-24', 'type': 'Roster-Reg'},
-        {'file': 'nba_roster_23_24_post.csv', 'season': '23-24', 'type': 'Roster-Post'},
         {'file': 'nba_roster_24_25_reg.csv', 'season': '24-25', 'type': 'Roster-Reg'},
-        {'file': 'nba_roster_24_25_post.csv', 'season': '24-25', 'type': 'Roster-Post'},
-        {'file': 'nba_playerstats_23_24_reg.csv', 'season': '23-24', 'type': 'Stats-Reg'},
-        {'file': 'nba_playerstats_24_25_reg.csv', 'season': '24-25', 'type': 'Stats-Reg'}
+        {'file': 'nba_playerstats_23_24_reg.csv', 'season': '23-24', 'type': 'Stats-Reg'}
     ]
     data = []
     for src in sources:
@@ -105,51 +105,26 @@ def calculate_fp(player):
     except:
         return 0
 
-# === DraftKings Lineup Generator ===
+# === DraftKings Lineup Optimizer ===
 def generate_dk_lineup(players, salary_cap):
     lineup = []
     used_players = set()
-    remaining_cap = salary_cap
-
     slots = [
-        ('PG', ['PG']),
-        ('SG', ['SG']),
-        ('SF', ['SF']),
-        ('PF', ['PF']),
-        ('C', ['C']),
-        ('G', ['PG', 'SG']),
-        ('F', ['SF', 'PF']),
-        ('UTIL', ['PG', 'SG', 'SF', 'PF', 'C'])
+        ('PG', ['PG']), ('SG', ['SG']), ('SF', ['SF']), ('PF', ['PF']),
+        ('C', ['C']), ('G', ['PG', 'SG']), ('F', ['SF', 'PF']), ('UTIL', ['PG', 'SG', 'SF', 'PF', 'C'])
     ]
-
     for slot, eligible_positions in slots:
         candidates = [p for p in players if p['Player'] not in used_players and any(pos in p.get('Pos', '') for pos in eligible_positions)]
-        candidates = sorted(candidates, key=lambda x: (x['Salary'] <= remaining_cap, x['FP']), reverse=True)
+        candidates = sorted(candidates, key=lambda x: (x['FP'] / x['Salary']) if x['Salary'] > 0 else 0, reverse=True)
         for player in candidates:
-            if player['Salary'] <= remaining_cap:
+            projected_total_salary = sum(p['Salary'] for p in lineup) + player['Salary']
+            if projected_total_salary <= salary_cap:
                 lineup.append({'Slot': slot, **player})
                 used_players.add(player['Player'])
-                remaining_cap -= player['Salary']
                 break
-        else:
-            if candidates:
-                fallback = sorted(candidates, key=lambda x: x['Salary'])[0]
-                lineup.append({'Slot': slot, **fallback})
-                used_players.add(fallback['Player'])
-                remaining_cap -= fallback['Salary']
-
     return lineup
 
-# === Save Salaries (All Players) ===
-def save_salaries(players):
-    today = datetime.now().strftime('%Y-%m-%d')
-    log_file = f"{SALARY_LOG_PATH}{today}_salaries.json"
-    salaries_log = [{'Player': p['Player'], 'Team': p.get('Team', ''), 'Pos': p.get('Pos', ''), 'Salary': p['Salary']} for p in players]
-    with open(log_file, 'w') as file:
-        json.dump(salaries_log, file, indent=4)
-    print(f"\nSalaries saved for analysis: {today}_salaries.json")
-
-# === Lineup Adjustment Interface ===
+# === Salary Adjustments ===
 def adjust_lineup(lineup, players):
     print("\nLineup Adjustment Menu:")
     while True:
@@ -165,46 +140,60 @@ def adjust_lineup(lineup, players):
             for p in players:
                 if p['Player'] == lineup[idx]['Player']:
                     p['Salary'] = int(new_salary)
-        print("Salary updated. Change more salaries? (y/n): ")
 
-# === Main ===
-if __name__ == "__main__":
-    salary_cap = int(input("\nEnter Salary Cap (default 50000): ") or 50000)
-    slate_teams = get_espn_slate()
-    print(f"\nToday's Slate: {', '.join(slate_teams)}")
-
-    manual_filter = input("\nWould you like to manually filter teams? (y/n): ").lower()
-    if manual_filter == 'y':
-        slate_teams = manual_slate_selection()
-
-    players = load_csv_players()
-
+# === Save Salaries ===
+def save_salaries(players):
     today = datetime.now().strftime('%Y-%m-%d')
     log_file = f"{SALARY_LOG_PATH}{today}_salaries.json"
-    previous_salaries = dict()
-    if os.path.exists(log_file):
-        with open(log_file, 'r') as file:
-            prev_data = json.load(file)
-            previous_salaries = {p['Player']: {'Salary': p['Salary'], 'Team': p.get('Team', ''), 'Pos': p.get('Pos', '')} for p in prev_data}
+    salaries_log = [{'Player': p['Player'], 'Team': p.get('Team', ''), 'Pos': p.get('Pos', ''), 'Salary': p['Salary']} for p in players]
+    with open(log_file, 'w') as file:
+        json.dump(salaries_log, file, indent=4)
+    print(f"\nSalaries saved: {log_file}")
 
-    # Apply salaries + recalculate FP
-    for p in players:
-        if p['Player'] in previous_salaries:
-            p['Salary'] = previous_salaries[p['Player']]['Salary']
-            p['Team'] = previous_salaries[p['Player']].get('Team', p['Team'])
-            p['Pos'] = previous_salaries[p['Player']].get('Pos', p['Pos'])
-        else:
-            p['Salary'] = random.randint(3000, 10000)
-        p['FP'] = calculate_fp(p)
+# === Reflexive Loop ===
+def reflexive_loop():
+    while True:
+        try:
+            salary_cap = SALARY_CAP
+            slate_teams = get_espn_slate()
+            print(f"\nToday's Slate: {', '.join(slate_teams)}")
+            manual_filter = input("\nWould you like to manually filter teams? (y/n): ").lower()
+            if manual_filter == 'y':
+                slate_teams = manual_slate_selection()
 
-    players = [p for p in players if p.get('Team') in slate_teams and p.get('Player')]
+            players = load_csv_players()
 
-    print(f"\nData pull successful. Entries: {len(players)}")
-    lineup = generate_dk_lineup(players, salary_cap)
+            salary_logs = sorted([f for f in os.listdir(SALARY_LOG_PATH) if f.endswith('_salaries.json')], reverse=True)
+            previous_salaries = dict()
+            if salary_logs:
+                with open(SALARY_LOG_PATH + salary_logs[0], 'r') as file:
+                    prev_data = json.load(file)
+                    previous_salaries = {p['Player']: {'Salary': p['Salary']} for p in prev_data}
 
-    print("\nDraftKings Style Lineup:")
-    for idx, player in enumerate(lineup, 1):
-        print(f"{idx}. {player['Slot']} - {player['Player']} ({player['Team']}) - Pos: {player['Pos']} - Salary: {player['Salary']} - FP: {player['FP']}")
+            for p in players:
+                if p['Player'] in previous_salaries:
+                    p['Salary'] = previous_salaries[p['Player']]['Salary']
+                else:
+                    p['Salary'] = random.randint(3000, 10000)
+                p['FP'] = calculate_fp(p)
 
-    adjust_lineup(lineup, players)
-    save_salaries(players)
+            players = [p for p in players if p.get('Team') in slate_teams and p.get('Player')]
+            print(f"\nData pull successful. Entries: {len(players)}")
+
+            lineup = generate_dk_lineup(players, salary_cap)
+
+            print("\nDraftKings Style Lineup:")
+            for idx, player in enumerate(lineup, 1):
+                print(f"{idx}. {player['Slot']} - {player['Player']} ({player['Team']}) - Pos: {player['Pos']} - Salary: {player['Salary']} - FP: {player['FP']}")
+
+            adjust_lineup(lineup, players)
+            save_salaries(players)
+
+            print("\nWaiting 15 minutes for next cycle...\n")
+            time.sleep(900)
+        except Exception as e:
+            print(f"ERROR: {e}")
+            time.sleep(900)
+
+if __name__ == "__main__":
+    reflexive_loop()
