@@ -1,6 +1,6 @@
 import os
 import re
-from logger import log_event
+from core.logger import log_event
 import bankroll_ai
 import swarm_miner
 import dfs_optimizer

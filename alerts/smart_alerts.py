@@ -1,5 +1,5 @@
-from trade_scoring_engine import score_trade
-from logger import log_event
+from trade.trade_scoring_engine import score_trade
+from core.logger import log_event
 
 def trigger_alert(trade_data):
     log_event("Smart Alerts", "Processing trade signal...")

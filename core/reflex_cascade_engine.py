@@ -1,4 +1,4 @@
-from logger import log_event
+from core.logger import log_event
 import random
 
 class ReflexCascadeEngine:

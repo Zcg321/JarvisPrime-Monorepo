@@ -5,7 +5,7 @@ import time
 import threading
 from data_intake import generate_metrics_from_data
 from reflex_chain_handler_final import trigger_reflex_chain  # Trigger chain logic here
-from surgecell_monitor import allocate_power
+from core.surgecell_monitor import allocate_power
 
 # === Reflexive Functions ===
 def adjust_aggression(profit):

@@ -1,4 +1,4 @@
-from logger import log_event
+from core.logger import log_event
 import random
 
 def optimize_efficiency(current_hash_rate, cycle_count=1):

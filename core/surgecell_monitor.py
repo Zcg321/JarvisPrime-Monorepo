@@ -1,5 +1,5 @@
 from reflex_chain_handler_final import trigger_reflex_chain
-from logger import log_event
+from core.logger import log_event
 import random
 
 # Function to simulate and allocate power to target modules based on priority

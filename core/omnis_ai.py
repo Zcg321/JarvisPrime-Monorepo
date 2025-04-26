@@ -1,8 +1,8 @@
-from logger import log_event
-from reflexive_deployment import register_logic, evaluate_logic
-from surgecell_monitor import request_power_boost
-from goku_engine import goku_boost
-from gohan_engine import gohan_support
+from core.logger import log_event
+from core.reflexive_deployment import register_logic, evaluate_logic
+from core.surgecell_monitor import request_power_boost
+from ai.goku_engine import goku_boost
+from ai.gohan_engine import gohan_support
 
 class OmnisAI:
     def __init__(self):

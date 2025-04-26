@@ -1,7 +1,7 @@
 import threading
 from reflexive_loop import ReflexiveLoop, evaluate_logic
-from surgecell_monitor import allocate_power
-from savepoint_manager import save_state, load_state
+from core.surgecell_monitor import allocate_power
+from core.savepoint_manager import save_state, load_state
 from self_coding_engine import self_code, self_optimize  # Self-coding imports
 
 rl = ReflexiveLoop()

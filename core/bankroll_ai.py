@@ -2,7 +2,7 @@ from ai.goku_engine import goku_boost
 from ai.gohan_engine import gohan_support
 from ai.vegeta_engine import vegeta_challenge
 from ai.piccolo_engine import piccolo_harmonize
-from logger import log_event
+from core.logger import log_event
 import random
 
 # Shared bankroll state

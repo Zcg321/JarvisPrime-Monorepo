@@ -3,8 +3,8 @@
 import os
 import sys
 import io
-from surgecell_monitor import allocate_power
-from savepoint_manager import save_state
+from core.surgecell_monitor import allocate_power
+from core.savepoint_manager import save_state
 from reflexive_loop import evaluate_logic
 
 def self_code(command):

@@ -2,9 +2,9 @@ from ai.goku_engine import goku_boost
 from ai.gohan_engine import gohan_support
 from ai.vegeta_engine import vegeta_challenge
 from ai.piccolo_engine import piccolo_harmonize
-from logger import log_event
+from core.logger import log_event
 from bankroll_ai import allocate_stake, adjust_aggression
-from reflexive_deployment import register_logic, evaluate_logic
+from core.reflexive_deployment import register_logic, evaluate_logic
 import random
 
 # Council State for Reflexive Adjustments
