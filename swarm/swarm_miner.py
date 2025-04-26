@@ -3,7 +3,7 @@ from ai.goku_engine import goku_boost
 from ai.gohan_engine import gohan_support
 from ai.vegeta_engine import vegeta_challenge
 from ai.piccolo_engine import piccolo_harmonize
-from efficiency_optimizer import optimize_efficiency
+from swarm.efficiency_optimizer import optimize_efficiency
 from reflexive_deployment import register_logic, evaluate_logic
 from logger import log_event
 import random

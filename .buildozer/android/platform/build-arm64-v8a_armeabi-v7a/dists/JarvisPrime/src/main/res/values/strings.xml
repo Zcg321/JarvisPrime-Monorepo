@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">JarvisPrime</string>
+    <string name="private_version">2ac98ea7688ecdf15e74a1d45533469ff2ad8154</string>
+    <string name="presplash_color">#000000</string>
+    <string name="urlScheme">kivy</string>
+</resources>

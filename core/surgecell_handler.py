@@ -1,5 +1,6 @@
-from reflex_chain_handler_final import trigger_reflex_chain
-from logger import log_event
+
+from core.reflex_chain_handler_generic import trigger_reflex_chain
+from core.logger import log_event
 import random
 
 def allocate_power(target_module, priority_level="normal"):

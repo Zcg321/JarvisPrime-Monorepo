@@ -6,13 +6,21 @@ from surgecell_monitor import request_power_boost
 from logger import log_event
 
 def trigger_reflex_chain(source, targets):
+    """
+    Triggers the reflex chain by engaging specific target modules based on their names.
+    This boosts the power and adapts the response based on the target.
+    """
     log_event("Reflex Chain", f"Triggered by {source}. Target modules: {targets}")
-    request_power_boost("reflex_chain")  # SurgeCell boost
 
+    # SurgeCell boost
+    request_power_boost("reflex_chain")
+
+    # Trigger the appropriate response for each target
     for target in targets:
         target_lower = target.lower()
         log_event("Reflex Chain", f"Engaging {target_lower} with adaptive power routing...")
-        
+
+        # Adaptive behavior based on the target
         if target_lower == "goku":
             goku_boost()
         elif target_lower == "gohan":
