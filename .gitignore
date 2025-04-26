@@ -3,6 +3,25 @@ __pycache__/
 *.py[cod]
 *$py.class
 
+# Ignore Python venv & IDE caches
+venv/
+desktop_env/
+__pycache__/
+
+# Ignore Buildozer / Android
+.buildozer/
+bin/
+*.apk
+
+# Ignore logs & large blobs
+jarvis_logs_*.txt
+jarvisprime_core.zip
+vosk-model-small-en-us-0.15.zip
+
+# Ignore user secrets
+private_key.pem
+public_key.pem
+
 # C extensions
 *.so
 
