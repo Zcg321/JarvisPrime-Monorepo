@@ -1,0 +1,16 @@
+# Jarvis Prime Desktop
+
+Jarvis Prime Desktop is a fully autonomous, OS-level AI assistant designed to operate as a true user on your machine — indistinguishable from human interaction.  
+It serves as the sensory and control layer for Jarvis Prime, acting as its **eyes, ears, hands, and feet**.
+
+## Features
+- Direct OS-level interaction without browser automation tools like Selenium or Playwright  
+- Simulates a real human user to bypass bot detection  
+- Integrates with local and network resources  
+- Modular design for expansion into any workflow or application  
+- Built for seamless integration into the larger Jarvis Prime ecosystem
+
+## Installation
+1. Clone this repository:
+   ```bash
+   git clone https://github.com/zcg3214/JarvisPrimeDesktop.git
