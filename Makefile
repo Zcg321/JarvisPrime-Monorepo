@@ -73,7 +73,17 @@ rag-rebuild:
 	PYTHONPATH=$(PWD) python scripts/rag_rebuild.py
 
 ci:
-	PYTHONPATH=$(PWD) pytest -q   tests/test_json_guard.py   tests/test_plugins_api.py   tests/test_jarvis_link.py   tests/test_server_mount.py   tests/test_json_contracts.py   tests/test_autoresurrect.py   tests/test_export_guard.py   tests/test_unified_cli.py   tests/test_contract_schemas.py   tests/test_dna_sync.py
+	PYTHONPATH=$(PWD) pytest -q \
+	  tests/test_json_guard.py \
+	  tests/test_plugins_api.py \
+	  tests/test_jarvis_link.py \
+	  tests/test_server_mount.py \
+	  tests/test_json_contracts.py \
+	  tests/test_autoresurrect.py \
+	  tests/test_export_guard.py \
+	  tests/test_unified_cli.py \
+	  tests/test_contract_schemas.py \
+	  tests/test_dna_sync.py
 
 .PHONY: ci-report
 ci-report:
