@@ -1,0 +1,16 @@
+torch
+transformers
+sentence-transformers
+faiss-cpu
+datasets
+tokenizers
+sentencepiece
+pyyaml
+fastapi
+uvicorn
+bitsandbytes
+rich
+tqdm
+numpy
+starlette>=0.37
+pydantic>=2.7
