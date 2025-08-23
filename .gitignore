@@ -1,0 +1,11 @@
+.jarvis/
+logs_server.txt
+server.pid
+JarvisOrigin/out/
+__pycache__/
+
+JarvisOrigin/artifacts/
+JarvisOrigin/data/gen/
+
+# Jarvis artifacts
+artifacts/
