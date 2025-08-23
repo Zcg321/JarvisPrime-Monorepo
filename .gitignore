@@ -1,0 +1,14 @@
+__pycache__/
+*.pyc
+logs/
+!logs/.gitkeep
+*.tgz
+.jarvis/
+.venv/
+logs_server.txt
+server.pid
+JarvisOrigin/out/
+JarvisOrigin/artifacts/
+JarvisOrigin/data/gen/
+# Jarvis artifacts
+artifacts/
