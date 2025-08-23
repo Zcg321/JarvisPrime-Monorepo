@@ -1,0 +1,49 @@
+"""Voice Mirror clarity helper.
+
+This module reflects the user's text back with a gentle nudge toward
+action.  It also searches Continuum philosophies for a matching keyword
+and appends the first snippet that aligns with the user's words.
+"""
+
+import re
+
+from src.core import anchors
+
+PHILOSOPHIES = anchors.load_all()["master"]["manifest"]["philosophies"]
+
+
+def _find_snippet(text: str) -> str:
+    """Return philosophy snippet whose keywords appear in ``text``.
+
+    The search is case-insensitive and scans both philosophy titles and
+    their descriptions.  The first match is returned.
+    """
+
+    low = text.lower()
+    # First check philosophy titles for direct keyword matches.
+    for title, line in PHILOSOPHIES.items():
+        tokens = re.findall(r"\w+", title.lower())
+        if any(tok in low for tok in tokens):
+            return line
+
+    # Fallback: scan philosophy descriptions.
+    for line in PHILOSOPHIES.values():
+        tokens = re.findall(r"\w+", line.lower())
+        if any(tok in low for tok in tokens):
+            return line
+
+    return ""
+
+
+def reflect(text: str) -> str:
+    """Return clarity statement optionally grounded in a philosophy."""
+
+    text = text.strip()
+    snippet = _find_snippet(text)
+    base = (
+        f"Clarity: {text}. "
+        "What is the smallest next true step you can finish in 20 minutes?"
+    )
+    if snippet:
+        base = f"{base} {snippet}"
+    return base
