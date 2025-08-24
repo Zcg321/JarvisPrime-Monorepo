@@ -1,7 +1,7 @@
 .PHONY: test lint
 
 test:
-pytest
+	pytest
 
 lint:
-flake8 JarvisPrime
+	flake8 JarvisPrime
