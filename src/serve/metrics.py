@@ -1,7 +1,7 @@
 import time
 from collections import deque
 from pathlib import Path
-from typing import Optional
+from typing import Optional, Dict
 import yaml
 from src.serve import logging as slog
 from src.serve import alerts
@@ -19,6 +19,9 @@ class Metrics:
         self.requests_total = 0
         self.requests_by_role = {}
         self.errors_total = 0
+        self.bad_request_total = 0
+        self.rate_limited_total = 0
+        self.forbidden_total: Dict[str, int] = {}
         self.lat_fp16 = deque(maxlen=1024)
         self.lat_int8 = deque(maxlen=1024)
         self.dfs_builds = 0
@@ -28,6 +31,8 @@ class Metrics:
         self.alerts_total = 0
         self.alerts_file_size = 0
         self.alerts_rotations = 0
+        self.ghost_compact_bytes_reclaimed = 0
+        self.ghost_compact_runs = 0
         self.thresholds = _THRESHOLDS
         self._breached = set()
         self.req_times = deque(maxlen=1024)
@@ -38,6 +43,7 @@ class Metrics:
         self._budget_alerted = False
         self.day_start = self.week_start = time.time()
         self.ratelimit_drops = 0
+        self.canary_requests: Dict[str, int] = {}
 
     def record(self, latency_ms: float, runtime: str, error: bool, role: Optional[str] = None) -> None:
         self.requests_total += 1
@@ -91,7 +97,12 @@ class Metrics:
             "alerts_total": self.alerts_total,
             "alerts_file_size": self.alerts_file_size,
             "alerts_rotations": self.alerts_rotations,
+            "ghost_compact_bytes_reclaimed": self.ghost_compact_bytes_reclaimed,
+            "ghost_compact_runs": self.ghost_compact_runs,
             "ratelimit_drops": self.ratelimit_drops,
+            "bad_request_total": self.bad_request_total,
+            "rate_limited_total": self.rate_limited_total,
+            "forbidden_total": self.forbidden_total,
             "thresholds": self.thresholds,
             "slo": slo,
         }
@@ -151,7 +162,23 @@ class Metrics:
                 slog.alert("error budget exhausted", component="metrics")
                 alerts.log_event("slo_breach", "error budget exhausted")
                 self.alerts_total += 1
-                self._budget_alerted = True
+        self._budget_alerted = True
 
 
 METRICS = Metrics()
+
+
+def record_canary(tool: str) -> None:
+    METRICS.canary_requests[tool] = METRICS.canary_requests.get(tool, 0) + 1
+
+
+def inc_bad_request() -> None:
+    METRICS.bad_request_total += 1
+
+
+def inc_rate_limited() -> None:
+    METRICS.rate_limited_total += 1
+
+
+def inc_forbidden(reason: str) -> None:
+    METRICS.forbidden_total[reason] = METRICS.forbidden_total.get(reason, 0) + 1

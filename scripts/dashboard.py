@@ -7,6 +7,7 @@ from datetime import datetime, timezone
 
 sys.path.append(str(Path(__file__).resolve().parents[1]))
 from src.serve import metrics, alerts
+from src.tools import roi_cohorts
 from datetime import datetime, timezone, timedelta
 
 
@@ -82,6 +83,7 @@ def main() -> None:
     lineage_summary = {"savepoints": len(list(Path("logs/savepoints").glob("*.json")))}
     trends = _rolling_counts()
     drill = _drilldowns()
+    drifts = roi_cohorts.detect_drift()
     data = {
         "health": health,
         "metrics": metrics_snap,
@@ -90,10 +92,15 @@ def main() -> None:
         "lineage": lineage_summary,
         "trends": trends,
         "drilldown": drill,
+        "cohort_drift_active": len(drifts),
+        "cohort_drift": drifts,
     }
     OUT.mkdir(parents=True, exist_ok=True)
     (OUT / "dashboard.json").write_text(json.dumps(data))
-    html = ["<html><body><h1>Dashboard</h1>"]
+    badge = " ✦" + str(len(drifts)) if drifts else ""
+    html = [f"<html><body><h1>Dashboard{badge}</h1>"]
+    if drifts:
+        html.append(f"<h2>Cohort Drift</h2><pre>{json.dumps(drifts)}</pre>")
     for section in ["health", "metrics", "alerts", "audit", "lineage"]:
         html.append(f"<h2>{section.title()}</h2><pre>{json.dumps(data[section])}</pre>")
     html.append("<h2>Trends</h2>")

@@ -18,13 +18,16 @@ from pathlib import Path
 from http.server import BaseHTTPRequestHandler, HTTPServer
 from typing import List, Dict, Optional, Literal
 
-from pydantic import BaseModel, ValidationError, Field
+from pydantic import BaseModel, ValidationError, Field, conint, condecimal, confloat
 
 from src.core import anchors
 from src.core.logio import append_jsonl_rotating
 from src.reflex.core import Reflex
+from src.reflex import policy as risk_policy
 from src.core.errors import json_error
-from src.serve import audit
+from src.serve import audit, metrics_store
+from src.serve.audit_export import export_audit
+from src.serve import indexer, quotas, autoscale
 from src.serve import logging as slog
 from src.serve import policy
 from src.serve import alerts, alerts_stream
@@ -48,9 +51,18 @@ from src.tools import (
     dfs_showdown,
     bankroll_alloc,
     portfolio_eval,
+    portfolio_export,
+    portfolio_dedupe,
+    late_swap,
+    alchohalt,
+    roi_cohorts,
+    portfolio_ab,
+    roi_attrib,
+    lineup_agent,
 )
 from src.data import schedule
 from src.tools import validate_inputs as validate_inputs_tool
+from src.serve import flags, locks
 from src.data import results as results_ingest
 from src.savepoint import logger as savepoint_logger
 from src.train import uptake
@@ -82,6 +94,7 @@ REQUIRE_AUTH = CFG.get("require_auth", False)
 RATE_CFG = CFG.get("rate", {})
 RPS = RATE_CFG.get("rps", 1000)
 BURST = RATE_CFG.get("burst", RPS)
+QUOTAS_CFG = CFG.get("quotas", {})
 RUNTIME = runtime_auto.init_runtime(os.environ.get("INFER_RUNTIME", "fp16"))
 if RUNTIME == "int8":
     try:
@@ -155,6 +168,17 @@ def _lineage_chain(lid: str):
     }
 
 
+def _openapi_spec():
+    return {
+        "openapi": "3.0.0",
+        "info": {"title": "Jarvis Prime", "version": "1.0", "config_sha": CONFIG_SHA},
+        "paths": {
+            "/chat": {"post": {"summary": "invoke tool"}},
+            "/health": {"get": {"summary": "health"}},
+        },
+    }
+
+
 def _auth_token(headers) -> Optional[str]:
     auth = headers.get("Authorization")
     if not auth or not auth.startswith("Bearer "):
@@ -222,13 +246,17 @@ class ValidateInputsArgs(BaseModel):
 
 
 class SubmitPlanArgs(BaseModel):
-    slate_id: str
-    lineups: List[dict]
-    bankroll: float
-    unit_fraction: Optional[float] = None
-    entry_fee: float
-    max_entries: int
-    seed: Optional[int] = None
+    date: str
+    site: Literal["DK"]
+    modes: List[Literal["classic", "showdown"]]
+    n_lineups: conint(ge=1, le=150)
+    max_from_team: conint(ge=1, le=4) = 3
+    seed: int = 1337
+    as_plan: bool = True
+    bankroll: condecimal(gt=0)
+    unit_fraction: confloat(gt=0, lt=0.5) = 0.02
+    entry_fee: condecimal(gt=0)
+    max_entries: conint(ge=1, le=150)
 
 
 schemas.register("submit_plan", SubmitPlanArgs, {"type": "object"})
@@ -273,6 +301,13 @@ CANONICAL_NAMES = [
     "validate_inputs",
     "submit_plan",
     "chaos_harness",
+    "alchohalt.checkin",
+    "alchohalt.metrics",
+    "alchohalt.schedule",
+    "roi_attrib",
+    "lineup_agent",
+    "lineup_agent_diverse",
+    "portfolio_export",
 ]
 
 # Describe available tools for discovery via legacy interfaces and /tools
@@ -300,6 +335,9 @@ TOOL_INFO = {
     "results_ingest": "Ingest contest results and update ROI",
     "bankroll_alloc": "Allocate bankroll tickets across slates",
     "portfolio_eval": "Estimate portfolio EV and risk",
+    "alchohalt.checkin": "Record daily halt/slip status",
+    "alchohalt.metrics": "Return streak and recent halt metrics",
+    "alchohalt.schedule": "Set daily reminder time",
     "schedule_query": "Query slate schedules",
     "validate_inputs": "Validate ownership, results, and lineup inputs",
     "dfs_calibrate": "Calibrate player projections",
@@ -336,7 +374,16 @@ def router(obj):
         metrics.METRICS.savepoints_written += 1
         return {"path": str(path), "lineage_id": lineage_id}
     if t == "savepoint_list":
-        return {"savepoints": savepoint.list_last(a.get("n", 5))}
+        n = int(a.get("n", 5))
+        files = sorted(savepoint_logger.LOG_DIR.glob("*.json"))
+        out = []
+        for p in files[-n:]:
+            try:
+                data = json.loads(p.read_text(encoding="utf-8"))
+                out.append({"event": data.get("event"), "ts_iso": data.get("ts_iso")})
+            except Exception:
+                continue
+        return {"savepoints": out}
     if t == "dfs_roi":
         return {"roi": dfs.roi(a.get("entries", []))}
     if t == "dfs_pool":
@@ -436,6 +483,12 @@ def router(obj):
         except Exception:
             fallback = savepoint.list_last(1)
             return {"ok": False, "fallback": fallback[0] if fallback else None}
+    if t == "alchohalt.checkin":
+        return alchohalt.checkin(a.get("status"), a.get("note"))
+    if t == "alchohalt.metrics":
+        return alchohalt.metrics()
+    if t == "alchohalt.schedule":
+        return alchohalt.schedule(a.get("hour", 21), a.get("minute", 0))
     if t == "recall":
         return {"experiences": uptake.list_last(a.get("n", 5))}
     if t == "replay":
@@ -589,6 +642,7 @@ def _ghost_seed(args):
             args.get("slate_id", ""),
             args.get("seed", 0),
             args.get("pool_size", 50),
+            token_id=risk_policy.current_token(),
         )
     }
 
@@ -600,6 +654,7 @@ def _ghost_inject(args):
             args.get("seed", 0),
             args.get("constraints"),
             args.get("cap", 50000),
+            token_id=risk_policy.current_token(),
         )
     }
 
@@ -632,7 +687,96 @@ def _validate_inputs(args):
 def _submit_plan(args):
     a = SubmitPlanArgs(**args)
     return submit_plan_tool.submit_plan(
-        a.slate_id, a.lineups, a.bankroll, a.unit_fraction or 0.02, a.entry_fee, a.max_entries, a.seed or 0
+        a.date,
+        a.site,
+        a.modes,
+        a.n_lineups,
+        a.max_from_team,
+        a.seed,
+        a.as_plan,
+        a.bankroll,
+        a.unit_fraction,
+        a.entry_fee,
+        a.max_entries,
+    )
+
+
+def _alchohalt_checkin(args):
+    return alchohalt.checkin(args.get("status"), args.get("note"))
+
+
+def _alchohalt_metrics(args):
+    return alchohalt.metrics()
+
+
+def _alchohalt_schedule(args):
+    return alchohalt.schedule(args.get("hour", 21), args.get("minute", 0))
+
+
+def _roi_cohorts(args):
+    return roi_cohorts.roi_cohorts(args)
+
+
+def _portfolio_ab(args):
+    return portfolio_ab.portfolio_ab(
+        args.get("A", {}),
+        args.get("B", {}),
+        args.get("ownership_csv", ""),
+        int(args.get("iters", 5000)),
+        int(args.get("seed", 1337)),
+    )
+
+
+def _portfolio_dedupe(args):
+    return portfolio_dedupe.portfolio_dedupe(
+        args.get("lineups", []),
+        int(args.get("max_dupe", 1)),
+        int(args.get("min_hamming", 2)),
+        args.get("tie_break", {}),
+        int(args.get("seed", 1337)),
+    )
+
+
+def _roi_attrib(args):
+    return roi_attrib.roi_attrib(
+        args.get("lineup", {}),
+        args.get("ownership_csv", ""),
+        int(args.get("iters", 2000)),
+        int(args.get("seed", 1337)),
+        bool(args.get("stack_pairs", False)),
+    )
+
+
+def _lineup_agent(args):
+    return lineup_agent.lineup_agent(
+        args.get("seed_lineup", {}),
+        int(args.get("beam", 8)),
+        int(args.get("depth", 4)),
+        args.get("constraints", {}),
+        args.get("weights", {}),
+        int(args.get("seed", 0)),
+    )
+
+
+def _lineup_agent_diverse(args):
+    return lineup_agent.lineup_agent_diverse(
+        args.get("seed_lineup", {}),
+        int(args.get("beam", 8)),
+        int(args.get("depth", 4)),
+        args.get("constraints", {}),
+        args.get("weights", {}),
+        args.get("metric", "jaccard"),
+        int(args.get("seed", 0)),
+    )
+
+
+def _late_swap(args):
+    return late_swap.late_swap(
+        args.get("lineup", {}),
+        args.get("news", []),
+        args.get("remaining_games", []),
+        args.get("constraints", {}),
+        int(args.get("seed", 1337)),
     )
 
 
@@ -665,6 +809,23 @@ CANONICAL_TO_FUNC.update(
         "schedule_query": _schedule_query,
         "validate_inputs": _validate_inputs,
         "submit_plan": _submit_plan,
+        "roi_cohorts": _roi_cohorts,
+        "portfolio_ab": _portfolio_ab,
+        "roi_attrib": _roi_attrib,
+        "lineup_agent": _lineup_agent,
+        "lineup_agent_diverse": _lineup_agent_diverse,
+        "late_swap": _late_swap,
+        "portfolio_export": lambda a: portfolio_export.portfolio_export(
+            a.get("slate_id", ""),
+            a.get("lineups", []),
+            a.get("format", "dk_csv"),
+            int(a.get("seed", 0)),
+            bool(a.get("overwrite", False)),
+        ),
+        "portfolio_dedupe": _portfolio_dedupe,
+        "alchohalt.checkin": _alchohalt_checkin,
+        "alchohalt.metrics": _alchohalt_metrics,
+        "alchohalt.schedule": _alchohalt_schedule,
         "surgecell": lambda a: router({"tool": "surgecell", "args": a}),
         "voice_mirror": lambda a: router({"tool": "voice_mirror", "args": a}),
         "savepoint": lambda a: router({"tool": "savepoint", "args": a}),
@@ -703,37 +864,180 @@ def reply(user_text: str):
 class H(BaseHTTPRequestHandler):
     PORT = PORT_CFG
     def _send(self, code, obj):
+        reason = obj.get("reason", "") if isinstance(obj, dict) else ""
+        if code == 400:
+            metrics.inc_bad_request()
+        elif code == 403:
+            metrics.inc_forbidden(reason)
+        elif code == 429:
+            metrics.inc_rate_limited()
         b = json.dumps(obj).encode()
         self.send_response(code)
         self.send_header("Content-Type", "application/json")
         self.send_header("Content-Length", str(len(b)))
         self.end_headers()
         self.wfile.write(b)
+        self._last_reason = reason
         return code
 
     def do_GET(self):
         start = time.time()
         token = _auth_token(self.headers)
         key = _rate_key(token, self.client_address[0])
-        if self.path == "/health":
+        token_info = TOKENS.get(token)
+        risk_policy.set_token(token_info.get("id") if token_info else "anon")
+        if self.path == "/openapi.json":
+            code = self._send(200, _openapi_spec())
+        elif self.path == "/health":
             alert_counts = alerts.counts_by_severity()
-            code = self._send(
-                200,
-                {
-                    "status": "ok",
-                    "uptime_s": round(time.time() - START_TIME, 3),
-                    "policy": REFLEX.policy,
-                    "config_sha": CONFIG_SHA,
-                    "tokens_configured": len(TOKENS),
-                    "alerts_total": sum(alert_counts.values()),
-                    "alerts_by_severity": alert_counts,
-                    "audit_files": len(list(Path("logs/audit").glob("*.jsonl"))),
-                    "savepoints_count": len(list(Path("logs/savepoints").glob("*.json"))),
-                    "port": H.PORT,
-                },
-            )
+            resp = {
+                "status": "ok",
+                "uptime_s": round(time.time() - START_TIME, 3),
+                "policy": REFLEX.policy,
+                "config_sha": CONFIG_SHA,
+                "tokens_configured": len(TOKENS),
+                "alerts_total": sum(alert_counts.values()),
+                "alerts_by_severity": alert_counts,
+                "audit_files": len(list(Path("logs/audit").glob("*.jsonl"))),
+                "savepoints_count": len(list(Path("logs/savepoints").glob("**/*.json"))),
+                "port": H.PORT,
+                "token_id": token_info.get("id") if token_info else None,
+                "policy_version": risk_policy.policy_version(),
+                "unit_size": risk_policy.unit_size(token_info.get("id") if token_info else None),
+                "unit_policy": risk_policy.policy_version(),
+            }
+            code = self._send(200, resp)
+        elif self.path.startswith("/metrics/rollup/latest"):
+            if token not in TOKEN_SET:
+                code = self._send(401, {"error": "Unauthorized"})
+            elif TOKENS.get(token, {}).get("role") != "admin":
+                code = self._send(403, {"error": "Forbidden"})
+            else:
+                q = parse_qs(urlparse(self.path).query)
+                n = int(q.get("n", [24])[0])
+                code = self._send(200, metrics_store.latest(n))
+        elif self.path.startswith("/metrics/history"):
+            if token not in TOKEN_SET:
+                code = self._send(401, {"error": "Unauthorized"})
+            elif TOKENS.get(token, {}).get("role") != "admin":
+                code = self._send(403, {"error": "Forbidden"})
+            else:
+                q = parse_qs(urlparse(self.path).query)
+                start = q.get("start", [""])[0]
+                end = q.get("end", [""])[0]
+                try:
+                    sdt = datetime.fromisoformat(start).replace(tzinfo=timezone.utc)
+                    edt = datetime.fromisoformat(end).replace(tzinfo=timezone.utc)
+                except Exception:
+                    code = self._send(400, bad_request("invalid_range"))
+                else:
+                    page = int(q.get("page", ["1"])[0])
+                    ps = min(int(q.get("page_size", ["100"])[0]), 100)
+                    rows = metrics_store.history(sdt, edt)
+                    start_i = (page - 1) * ps
+                    code = self._send(
+                        200,
+                        {
+                            "items": rows[start_i : start_i + ps],
+                            "page": page,
+                            "page_size": ps,
+                            "total": len(rows),
+                        },
+                    )
+        elif self.path.startswith("/quotas/usage"):
+            if token not in TOKEN_SET:
+                code = self._send(401, {"error": "Unauthorized"})
+            elif TOKENS.get(token, {}).get("role") != "admin":
+                code = self._send(403, {"error": "Forbidden"})
+            else:
+                q = parse_qs(urlparse(self.path).query)
+                date = q.get("date", [datetime.now(timezone.utc).date().isoformat()])[0]
+                code = self._send(200, quotas.usage(date))
+        elif self.path.startswith("/quotas/reset"):
+            if token not in TOKEN_SET:
+                code = self._send(401, {"error": "Unauthorized"})
+            elif TOKENS.get(token, {}).get("role") != "admin":
+                code = self._send(403, {"error": "Forbidden"})
+            else:
+                q = parse_qs(urlparse(self.path).query)
+                tid = q.get("token_id", [None])[0]
+                dt = q.get("date", [None])[0]
+                if not tid:
+                    code = self._send(400, bad_request("missing_token"))
+                else:
+                    quotas.reset(tid, dt)
+                    code = self._send(200, {"ok": True})
         elif self.path == "/metrics":
-            code = self._send(200, metrics.METRICS.snapshot())
+            snap = metrics.METRICS.snapshot()
+            snap.update(metrics_store.stats())
+            snap.update(
+                {
+                    "token_id": token_info.get("id") if token_info else None,
+                    "policy_version": risk_policy.policy_version(),
+                }
+            )
+            code = self._send(200, snap)
+        elif self.path.startswith("/audit/export"):
+            if token not in TOKEN_SET:
+                code = self._send(401, {"error": "Unauthorized"})
+            elif TOKENS.get(token, {}).get("role") != "admin":
+                code = self._send(403, {"error": "Forbidden"})
+            else:
+                q = parse_qs(urlparse(self.path).query)
+                tid = q.get("token_id", [""])[0]
+                since = q.get("since", [""])[0]
+                until = q.get("until", [""])[0]
+                out = Path("artifacts/exports")
+                out.mkdir(parents=True, exist_ok=True)
+                fname = out / f"audit_{tid}_{int(time.time())}.tar.gz"
+                path, manifest = export_audit(tid, since, until, fname)
+                code = self._send(200, {"ok": True, "path": str(path), "manifest": manifest})
+        elif self.path == "/autoscale/hint":
+            if token not in TOKEN_SET:
+                code = self._send(401, {"error": "Unauthorized"})
+            elif TOKENS.get(token, {}).get("role") != "admin":
+                code = self._send(403, {"error": "Forbidden"})
+            else:
+                code = self._send(200, autoscale.hint())
+        elif self.path == "/flags":
+            if token not in TOKEN_SET:
+                code = self._send(401, {"error": "Unauthorized"})
+            elif TOKENS.get(token, {}).get("role") != "admin":
+                code = self._send(403, {"error": "Forbidden"})
+            else:
+                code = self._send(200, flags.dump())
+        elif self.path.startswith("/locks"):
+            if token not in TOKEN_SET:
+                code = self._send(401, {"error": "Unauthorized"})
+            elif TOKENS.get(token, {}).get("role") != "admin":
+                code = self._send(403, {"error": "Forbidden"})
+            else:
+                qs = parse_qs(urlparse(self.path).query)
+                date = qs.get("date", [""])[0]
+                site = qs.get("site", ["DK"])[0]
+                code = self._send(200, locks.get_locks(date, site))
+        elif self.path == "/indexes/status":
+            if token not in TOKEN_SET:
+                code = self._send(401, {"error": "Unauthorized"})
+            elif TOKENS.get(token, {}).get("role") != "admin":
+                code = self._send(403, {"error": "Forbidden"})
+            else:
+                code = self._send(200, indexer.status())
+        elif self.path == "/indexes/rebuild":
+            if token not in TOKEN_SET:
+                code = self._send(401, {"error": "Unauthorized"})
+            elif TOKENS.get(token, {}).get("role") != "admin":
+                code = self._send(403, {"error": "Forbidden"})
+            else:
+                ln = int(self.headers.get("Content-Length", "0") or "0")
+                raw = self.rfile.read(ln)
+                try:
+                    body = json.loads(raw or b"{}")
+                except Exception:
+                    code = self._send(400, bad_request("invalid_json"))
+                else:
+                    which = body.get("which", "all")
+                    code = self._send(200, indexer.rebuild(which))
         elif self.path == "/metrics/prom":
             if REQUIRE_AUTH and token not in TOKEN_SET:
                 code = self._send(401, {"error": "Unauthorized"})
@@ -805,7 +1109,19 @@ class H(BaseHTTPRequestHandler):
                 q = parse_qs(urlparse(self.path).query)
                 sev = q.get("severity", [None])[0]
                 since = _parse_time(q.get("since", [None])[0])
-                code = self._send(200, alerts.get_last(since=since, severity=sev))
+                page = int(q.get("page", ["1"])[0])
+                ps = min(int(q.get("page_size", ["100"])[0]), 100)
+                recs = alerts.get_last(since=since, severity=sev)
+                start_i = (page - 1) * ps
+                code = self._send(
+                    200,
+                    {
+                        "items": recs[start_i : start_i + ps],
+                        "page": page,
+                        "page_size": ps,
+                        "total": len(recs),
+                    },
+                )
         elif self.path.startswith("/compliance/audit"):
             if token not in TOKEN_SET:
                 code = self._send(401, {"error": "Unauthorized"})
@@ -860,7 +1176,18 @@ class H(BaseHTTPRequestHandler):
                     self.wfile.write(data)
                     code = 200
                 else:
-                    code = self._send(200, recs)
+                    page = int(q.get("page", ["1"])[0])
+                    ps = min(int(q.get("page_size", ["100"])[0]), 100)
+                    start_i = (page - 1) * ps
+                    code = self._send(
+                        200,
+                        {
+                            "items": recs[start_i : start_i + ps],
+                            "page": page,
+                            "page_size": ps,
+                            "total": len(recs),
+                        },
+                    )
         elif self.path.startswith("/lineage/"):
             if token not in TOKEN_SET:
                 code = self._send(401, {"error": "Unauthorized"})
@@ -913,8 +1240,41 @@ class H(BaseHTTPRequestHandler):
         token = _auth_token(self.headers)
         token_info = TOKENS.get(token)
         role = token_info.get("role") if token_info else None
+        token_id = token_info.get("id") if token_info else None
+        risk_policy.set_token(token_id or "anon")
         key = _rate_key(token, self.client_address[0])
-        if self.path != "/chat":
+        canary_call = False
+        if self.path == "/indexes/rebuild":
+            if token not in TOKEN_SET:
+                code = self._send(401, {"error": "Unauthorized"})
+            elif TOKENS.get(token, {}).get("role") != "admin":
+                code = self._send(403, {"error": "Forbidden"})
+            else:
+                ln = int(self.headers.get("Content-Length", "0") or "0")
+                raw = self.rfile.read(ln)
+                try:
+                    body = json.loads(raw or b"{}")
+                except Exception:
+                    code = self._send(400, bad_request("invalid_json"))
+                else:
+                    which = body.get("which", "all")
+                    code = self._send(200, indexer.rebuild(which))
+        elif self.path == "/flags/flip":
+            if token not in TOKEN_SET:
+                code = self._send(401, {"error": "Unauthorized"})
+            elif TOKENS.get(token, {}).get("role") != "admin":
+                code = self._send(403, {"error": "Forbidden"})
+            else:
+                ln = int(self.headers.get("Content-Length", "0") or "0")
+                raw = self.rfile.read(ln)
+                try:
+                    body = json.loads(raw or b"{}")
+                except Exception:
+                    code = self._send(400, bad_request("invalid_json"))
+                else:
+                    flags.flip(body.get("name"), body.get("state"), body.get("percent"))
+                    code = self._send(200, {"ok": True})
+        elif self.path != "/chat":
             code = self._send(404, json_error("not_found", 404))
         elif REQUIRE_AUTH and token not in TOKEN_SET:
             code = self._send(401, {"error": "Unauthorized"})
@@ -965,21 +1325,67 @@ class H(BaseHTTPRequestHandler):
                             alerts.log_event("policy_deny", "role policy", role)
                             slog.alert("policy deny", component="policy", role=role)
                             code = self._send(403, {"error": "Forbidden", "reason": "role policy"})
+                        reason = flags.reason(message_value, token_id, role)
+                        if reason:
+                            code = self._send(
+                                403,
+                                {
+                                    "error": "Forbidden",
+                                    "reason": reason,
+                                    "token_id": token_id,
+                                    "policy_version": risk_policy.policy_version(),
+                                },
+                            )
                         elif message_value in CANONICAL_TO_FUNC:
-                            try:
-                                result = CANONICAL_TO_FUNC[message_value](args)
-                                code = self._send(200, result)
-                            except ValidationError as exc:
-                                code = self._send(400, bad_request("invalid_args", exc.errors()))
-                            except Exception as exc:
-                                if slog.CURRENT_LEVEL <= slog.LEVELS["DEBUG"]:
-                                    code = self._send(500, json_error("internal_error", 500, detail=str(exc)))
-                                else:
-                                    code = self._send(500, json_error("internal_error", 500))
+                            if token_id and QUOTAS_CFG and not quotas.allow(token_id, QUOTAS_CFG):
+                                code = self._send(429, {"error": "RateLimited"})
+                            else:
+                                tool_start = time.time()
+                                try:
+                                    risk_policy.set_tool(message_value)
+                                    result = CANONICAL_TO_FUNC[message_value](args)
+                                    if isinstance(result, dict):
+                                        result.setdefault("token_id", token_id)
+                                        result.setdefault("policy_version", risk_policy.policy_version())
+                                    code = self._send(200, result)
+                                    if canary_call:
+                                        metrics.record_canary(message_value)
+                                except ValidationError as exc:
+                                    code = self._send(400, bad_request("invalid_args", exc.errors()))
+                                except risk_policy.RiskViolation:
+                                    code = self._send(
+                                        403,
+                                        {
+                                            "error": "Forbidden",
+                                            "reason": "risk_policy",
+                                            "token_id": token_id,
+                                            "policy_version": risk_policy.policy_version(),
+                                        },
+                                    )
+                                except Exception as exc:
+                                    if slog.CURRENT_LEVEL <= slog.LEVELS["DEBUG"]:
+                                        code = self._send(500, json_error("internal_error", 500, detail=str(exc)))
+                                    else:
+                                        code = self._send(500, json_error("internal_error", 500))
+                                finally:
+                                    risk_policy.set_tool("")
+                                    if token_id:
+                                        quotas.add_cpu(token_id, int((time.time() - tool_start) * 1000))
                         else:
                             code = self._send(404, json_error("unknown_message", 404))
         duration = time.time() - start
         metrics.METRICS.record(duration * 1000, RUNTIME, code >= 400, role)
+        try:
+            metrics_store.log_request(
+                time.time(),
+                message_value or "",
+                RUNTIME,
+                duration * 1000,
+                "ok" if code < 400 else "error",
+                getattr(self, "_last_reason", ""),
+            )
+        except Exception:
+            pass
         append_jsonl_rotating(
             "logs/server_access.jsonl",
             {
