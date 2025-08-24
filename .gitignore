@@ -148,6 +148,7 @@ celerybeat.pid
 
 # Environments
 .env
+.env.local
 .venv
 env/
 venv/
@@ -194,3 +195,4 @@ cython_debug/
 
 # Ignore model artifacts
 model/
+artifacts/

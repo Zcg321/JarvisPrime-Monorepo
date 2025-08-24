@@ -5,3 +5,5 @@ pandas
 numpy
 vaderSentiment
 websockets
+python-dotenv
+flake8

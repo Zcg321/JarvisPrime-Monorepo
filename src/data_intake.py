@@ -3,13 +3,9 @@ import pandas as pd
 import random
 from io import StringIO
 
-# === API Keys ===
-ODDS_API_KEY = "0208064cc68e01562f4979625d9fdf0f"
-API_FOOTBALL_KEY = "2be90aeb19de5272f20cb38d7bc07049"
+from utils.config import THE_ODDS_API_KEY, API_FOOTBALL_KEY
 
-API_FOOTBALL_HEADERS = {
-    "x-apisports-key": API_FOOTBALL_KEY
-}
+API_FOOTBALL_HEADERS = {"x-apisports-key": API_FOOTBALL_KEY}
 
 # === League IDs (API-Football) ===
 LEAGUE_IDS = {
@@ -39,7 +35,7 @@ def fetch_api_football(league_id):
 # === Fetch from The Odds API ===
 def fetch_odds_api(sport_key):
     url = f"https://api.the-odds-api.com/v4/sports/{sport_key}/odds"
-    params = {"regions": "us", "markets": "spreads,totals", "apiKey": ODDS_API_KEY}
+    params = {"regions": "us", "markets": "spreads,totals", "apiKey": THE_ODDS_API_KEY}
     try:
         response = requests.get(url, params=params, timeout=10)
         if response.status_code == 200:

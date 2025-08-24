@@ -29,7 +29,7 @@ def piccolo_harmonize(metrics, weight):
     return metrics
 
 def auto_tune_council(current_score):
-    global previous_score, council_weights
+    global previous_score
     if previous_score is not None:
         if current_score < previous_score:
             council_weights['goku'] += 0.01
