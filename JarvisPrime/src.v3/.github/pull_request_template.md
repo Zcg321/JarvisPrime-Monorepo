@@ -1,0 +1,3 @@
+- [ ] Tests pass
+- [ ] STATUS.md updated
+- [ ] No secrets or PII

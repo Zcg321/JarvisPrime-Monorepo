@@ -1,0 +1,12 @@
+services:
+  - type: web
+    name: alchohalt-api
+    env: docker
+    dockerfilePath: Dockerfile
+    healthCheckPath: /alchohalt/health
+    port: 8811
+
+cron:
+  - name: alchohalt-notify
+    schedule: "*/15 * * * *"
+    command: "python scripts/alchohalt_notify.py"

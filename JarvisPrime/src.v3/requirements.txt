@@ -1,0 +1,11 @@
+requests
+pydantic
+PyYAML
+fastapi
+uvicorn
+pytest
+httpx
+sqlmodel
+jinja2
+python-multipart
+cryptography

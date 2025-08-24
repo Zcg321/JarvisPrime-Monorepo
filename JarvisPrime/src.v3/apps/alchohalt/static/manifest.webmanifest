@@ -1,0 +1,13 @@
+{
+  "name": "Alchohalt",
+  "short_name": "Alchohalt",
+  "start_url": "/alchohalt/ui",
+  "display": "standalone",
+  "icons": [
+    {
+      "src": "/alchohalt/static/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    }
+  ]
+}

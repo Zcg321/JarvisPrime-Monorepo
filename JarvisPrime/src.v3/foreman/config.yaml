@@ -1,0 +1,54 @@
+foreman_id: jarvis-foreman
+conversation_hint: continuum-foreman-thread
+models:
+  queue: gpt-4o-mini
+  codex: gpt-4o-mini
+max_files_touched: 15
+context:
+  include_repo_map: true
+  include_hot_files: true
+  include_recent_log: true
+  include_last_diff: true
+  max_files_listed: 8000
+  hot_max_bytes_each: 30000
+  diff_max_bytes: 100000
+chaining:
+  auto_chain: false
+  auto_chain_max: 5
+  auto_chain_cooldown_sec: 90
+  planner_fallback: true
+pool:
+  max_workers: 3
+  max_per_repo: 1
+  queue_max: 200
+  rate_limits:
+    openai_qps: 3
+    openai_tpm: 80000
+    backoff_initial_ms: 1000
+    backoff_max_ms: 15000
+branching:
+  enable_isolation: false
+  branch_prefix: autofeature/
+routing:
+  policies:
+    alchohalt: { repo: "YOURORG/alchohalt", branch: "main", weight: 10, tokens: ["alchohalt","streak","check-in","caregiver"] }
+    bridge: { repo: "YOURORG/foreman", branch: "main", weight: 9, tokens: ["bridge","worker pool","queue","baton"] }
+    docs: { repo: "YOURORG/docs", branch: "main", weight: 5, tokens: ["docs","README","handbook"] }
+  default: { repo: "YOURORG/your-repo", branch: "main" }
+repos:
+  YOURORG/alchohalt:
+    branch: main
+    token_env: GITHUB_TOKEN_ALCHOHALT
+    pr_mode: true
+  YOURORG/foreman:
+    branch: main
+    token_env: GT_TOKEN
+  YOURORG/docs:
+    branch: main
+    token_env: GITHUB_TOKEN_DOCS
+  YOURORG/your-repo:
+    branch: main
+    token_env: GT_TOKEN
+  OTHERORG/another-repo:
+    branch: main
+    token_env: GITHUB_TOKEN_OTHERORG__ANOTHER_REPO

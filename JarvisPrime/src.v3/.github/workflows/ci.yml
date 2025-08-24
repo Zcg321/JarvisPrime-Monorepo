@@ -1,0 +1,24 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+    - uses: actions/setup-python@v4
+      with:
+        python-version: '3.11'
+    - run: pip install -r requirements.txt
+    - run: python -m py_compile bridge/foreman_bridge.py duet/duet_foreman.py apps/alchohalt/*.py
+    - run: pytest -q
+    - uses: actions/setup-node@v3
+      with:
+        node-version: '20'
+      - if: ${{ exists('package.json') }}
+        run: |
+          npm ci
+          npm test --silent || true

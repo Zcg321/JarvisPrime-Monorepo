@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Alchohalt</title>
+  <style>
+    body { font-family: sans-serif; margin: 2rem; }
+    form { margin: 1rem 0; }
+  </style>
+  <link rel="manifest" href="/alchohalt/static/manifest.webmanifest">
+  <link rel="icon" href="/alchohalt/static/icon-192.png">
+</head>
+<body>
+<div id="offline" style="display:none;background:#fcc;padding:0.5rem;">Offline</div>
+{% block content %}{% endblock %}
+<script>
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.register('/alchohalt/static/sw.js').then(reg=>{
+    if (reg.sync) reg.sync.register('alchohalt-sync').catch(()=>{});
+  });
+}
+function updateOnline(){
+  document.getElementById('offline').style.display = navigator.onLine ? 'none':'block';
+  if (navigator.onLine && navigator.serviceWorker.controller){
+    navigator.serviceWorker.controller.postMessage('online');
+  }
+}
+window.addEventListener('online', updateOnline);
+window.addEventListener('offline', updateOnline);
+updateOnline();
+</script>
+</body>
+</html>
