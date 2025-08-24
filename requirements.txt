@@ -1,1 +1,7 @@
 requests
+yfinance
+ccxt
+pandas
+numpy
+vaderSentiment
+websockets
