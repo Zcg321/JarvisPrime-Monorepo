@@ -1,0 +1,11 @@
+canary_tokens:
+- test
+lineup_agent:
+  percent: 25
+  state: canary
+roi_attrib:
+  percent: 0
+  state: true
+roi_cohorts:
+  percent: 0
+  state: true

@@ -11,9 +11,9 @@ tokens:
     token: TEST_TOKEN
     role: admin
 rate:
-  rps: 100
-  burst: 100
+  rps: 20
+  burst: 20
 policies:
   - role: user
-    allow: ["dfs_*", "voice_mirror"]
+    allow: ["dfs_*", "voice_mirror", "lineup_agent"]
     deny: ["chaos_harness", "dfs_portfolio"]

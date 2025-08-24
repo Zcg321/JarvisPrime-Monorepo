@@ -1,0 +1,1 @@
+python scripts/offline_rerun.py --src artifacts/snapshots/offline/demo.tar.gz --check

@@ -30,6 +30,7 @@ SEVERITY_MAP = {
     "compliance": "INFO",
     "compliance_purge": "INFO",
     "compliance_export": "INFO",
+    "cohort_drift": "WARN",
 }
 
 

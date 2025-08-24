@@ -6,25 +6,39 @@ import datetime as dt
 from pathlib import Path
 from typing import Optional
 
-LEDGER_PATH = Path("logs/ledger/daily_ledger.jsonl")
+from . import policy
+LEDGER_DIR = Path("logs/ledger")
+LEDGER_PATH = LEDGER_DIR / "daily_ledger.jsonl"  # legacy path
 
 
-def record(amount: float, outcome: Optional[float] = None, ts: Optional[dt.datetime] = None) -> None:
-    LEDGER_PATH.parent.mkdir(parents=True, exist_ok=True)
+def _path(token_id: Optional[str] = None) -> Path:
+    token = token_id or policy.current_token()
+    return LEDGER_DIR / f"{token}.jsonl"
+
+
+def record(
+    amount: float,
+    outcome: Optional[float] = None,
+    ts: Optional[dt.datetime] = None,
+    token_id: Optional[str] = None,
+) -> None:
+    path = _path(token_id)
+    path.parent.mkdir(parents=True, exist_ok=True)
     ts = ts or dt.datetime.utcnow()
     rec = {"ts": ts.isoformat(), "amount": float(amount)}
     if outcome is not None:
         rec["outcome"] = float(outcome)
-    with LEDGER_PATH.open("a") as f:
+    with path.open("a") as f:
         f.write(json.dumps(rec) + "\n")
 
 
-def day_pnl(day: Optional[dt.date] = None) -> float:
+def day_pnl(day: Optional[dt.date] = None, token_id: Optional[str] = None) -> float:
     day = day or dt.datetime.utcnow().date()
-    if not LEDGER_PATH.exists():
+    path = _path(token_id)
+    if not path.exists():
         return 0.0
     total = 0.0
-    for line in LEDGER_PATH.read_text().splitlines():
+    for line in path.read_text().splitlines():
         if not line.strip():
             continue
         rec = json.loads(line)

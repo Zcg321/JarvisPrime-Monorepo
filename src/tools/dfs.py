@@ -5,6 +5,7 @@ from typing import List, Dict, Any, Optional, Set
 
 from src.tools.dfs_scoring import adjust_projection
 from src.tools.roi_cache import load_ema
+from . import ghost_roi
 
 from src.savepoint.logger import savepoint_log
 
@@ -199,6 +200,14 @@ def predict_lineup(
         elif name in ema:
             bias = max(min(ema[name], 0.25), -0.15)
             adj *= 1 + bias
+        if roi_bias:
+            carry = ghost_roi.load_ema(
+                name,
+                "classic",
+                int(roi_bias.get("lookback_days", 90)),
+                float(roi_bias.get("alpha", 0.35)),
+            )
+            adj *= 1 + carry
         own = None
         if ownership:
             own = float(ownership.get(name, 0.0)) / 100.0
