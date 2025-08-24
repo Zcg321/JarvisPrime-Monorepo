@@ -1,0 +1,1 @@
+PYTHONPATH=. python scripts/compliance.py purge --simulate --token-id user1 --since 2025-10-25T00:00Z --until 2025-10-25T23:59Z

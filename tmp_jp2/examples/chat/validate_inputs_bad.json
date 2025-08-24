@@ -1,0 +1,7 @@
+{
+  "message": "validate_inputs",
+  "args": {
+    "ownership_csv": "missing.csv",
+    "lineups": []
+  }
+}

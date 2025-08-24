@@ -1,0 +1,4 @@
+{
+  "message": "validate_inputs",
+  "args": {"ownership_csv": "data/ownership/sample_classic.csv", "lineups": []}
+}

@@ -1,0 +1,4 @@
+{
+  "message": "roi_report",
+  "args": {"lookback_days": 60}
+}

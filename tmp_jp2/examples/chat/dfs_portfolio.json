@@ -1,0 +1,14 @@
+{
+  "message": "dfs_portfolio",
+  "args": {
+    "slates": [
+      {"id": "DK_NBA_2025-10-25_MAIN", "type": "classic"},
+      {"id": "DK_NBA_2025-10-25_SD1", "type": "showdown"}
+    ],
+    "n_lineups": 6,
+    "max_from_team": 3,
+    "global_exposure_caps": {"PLAYER_123": 0.35},
+    "scoring_mode": "vegeta",
+    "seed": 1337
+  }
+}

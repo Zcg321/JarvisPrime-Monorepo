@@ -1,0 +1,20 @@
+max_drawdown_p95: 0.25
+max_variance: 2.0
+require_ev_ge: 0.0
+bankroll: 0
+unit_fraction: 0.01
+min_unit: 1
+max_unit: 100
+policies:
+  - token_id: user1
+    bankroll: 1500
+    max_drawdown_p95: 0.3
+    unit_fraction: 0.02
+    min_unit: 5
+    max_unit: 50
+  - token_id: user2
+    bankroll: 1500
+    max_drawdown_p95: 0.2
+    unit_fraction: 0.02
+    min_unit: 5
+    max_unit: 50

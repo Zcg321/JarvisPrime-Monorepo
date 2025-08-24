@@ -1,0 +1,1 @@
+{"message":"lineup_agent","args":{"seed_lineup":{"players":[]},"beam":6,"depth":3,"constraints":{"max_from_team":3},"seed":1337}}
