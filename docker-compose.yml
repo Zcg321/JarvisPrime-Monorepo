@@ -1,0 +1,35 @@
+version: "3.9"
+services:
+  api:
+    build: .
+    command: uvicorn apps.alchohalt.app:app --host 0.0.0.0 --port 8811
+    ports:
+      - "8811:8811"
+    volumes:
+      - alchohalt_data:/data
+    env_file:
+      - .env
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8811/alchohalt/health"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+
+  notify:
+    build: .
+    command: bash -lc "while true; do python scripts/alchohalt_notify.py; sleep 60; done"
+    volumes:
+      - alchohalt_data:/data
+    env_file:
+      - .env
+    depends_on:
+      - api
+
+  mailhog:
+    image: mailhog/mailhog
+    ports:
+      - "8025:8025"
+    profiles: ["mailhog"]
+
+volumes:
+  alchohalt_data:

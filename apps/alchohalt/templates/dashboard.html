@@ -1,0 +1,57 @@
+{% extends "base.html" %}
+{% block content %}
+<h1>Dashboard</h1>
+<p>User: {{ masked_email }}</p>
+<p>Current streak: {{ streaks.current_streak_days }} days</p>
+<p>Longest streak: {{ streaks.longest_streak_days }} days</p>
+<p>Last 30 days - halted: {{ streaks.last_30.halted }}, slipped: {{ streaks.last_30.slipped }}</p>
+<a href="/alchohalt/ui/checkin">Check in today</a>
+<ul>
+{% for c in recent %}
+  <li>{{ c.date }} - {{ c.status }}{% if c.note %}: {{ c.note }}{% endif %}</li>
+{% endfor %}
+</ul>
+
+<h2>Caregiver Consent</h2>
+<form method="post" action="/alchohalt/ui/consent">
+  <input type="checkbox" name="consent" value="true" {% if user.consent_caregiver %}checked{% endif %}>
+  <button type="submit">Save</button>
+</form>
+
+<h2>Caregivers</h2>
+<ul>
+{% for cg in caregivers %}
+  <li>{{ cg.role }} - {{ cg.caregiver_email }}</li>
+{% endfor %}
+</ul>
+<form method="post" action="/alchohalt/ui/caregivers/add">
+  <input name="caregiver_email" placeholder="email">
+  <select name="role"><option value="viewer">viewer</option><option value="supporter">supporter</option></select>
+  <button type="submit">Add</button>
+</form>
+<h3>Invite Caregiver</h3>
+<form method="post" action="/alchohalt/invite_caregiver">
+  <input name="user_id" type="hidden" value="{{ user.id }}">
+  <input name="caregiver_email" placeholder="email">
+  <select name="role"><option value="viewer">viewer</option><option value="supporter">supporter</option></select>
+  <button type="submit">Invite</button>
+</form>
+<form method="post" action="/alchohalt/ui/caregivers/delete">
+  <input name="caregiver_email" placeholder="email">
+  <button type="submit">Remove</button>
+</form>
+
+<h2>Alert Preferences</h2>
+<ul>
+{% for p in prefs %}
+  <li>{{ p.channel }} - {{ p.threshold }}</li>
+{% endfor %}
+</ul>
+<form method="post" action="/alchohalt/ui/alert_prefs">
+  <select name="channel"><option value="email">email</option><option value="sms">sms</option></select>
+  <select name="threshold"><option value="slip">slip</option><option value="two_in_7">two_in_7</option><option value="three_in_30">three_in_30</option></select>
+  <input name="quiet_hours_start" type="number" min="0" max="23" placeholder="quiet start">
+  <input name="quiet_hours_end" type="number" min="0" max="23" placeholder="quiet end">
+  <button type="submit">Save</button>
+</form>
+{% endblock %}

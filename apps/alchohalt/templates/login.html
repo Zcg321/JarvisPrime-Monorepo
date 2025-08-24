@@ -1,0 +1,10 @@
+{% extends "base.html" %}
+{% block content %}
+<h1>Alchohalt Login</h1>
+<form method="post" action="/alchohalt/request_link">
+  <input name="email" placeholder="email"/>
+  <input name="tz" placeholder="tz"/>
+  <input name="reminder_hour" type="number" value="21"/>
+  <button type="submit">Send Link</button>
+</form>
+{% endblock %}

@@ -1,0 +1,20 @@
+{
+  "anchors": [
+    "JarvisPrime_BootProtocol.md",
+    "continuum_master_final.json",
+    "continuum_ascension_path.json",
+    "continuum_true_endgame.json"
+  ],
+  "policy": {"max_files_touched": 15, "task_time_hint": "≤90m"},
+  "repos": {
+    "YOURORG/your-repo": {
+      "branch": "main",
+      "queue": [
+        {"title": "Stabilize baseline", "scope": "Make lint/type/test green; wire push; no features."},
+        {"title": "Ship Alchohalt MVP", "scope": "Daily 21:00 notification + check-in halted/slipped(+note) + streaks 7/30d + export/import JSON; minimal UI."},
+        {"title": "Observability & docs", "scope": "Add /health, logs/alerts.jsonl, artifacts/reports/dashboard.(json|html); expand STATUS.md verification; no business logic changes."}
+      ],
+      "done": []
+    }
+  }
+}
