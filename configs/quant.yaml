@@ -1,0 +1,3 @@
+model: artifacts/base
+out: artifacts/quant
+method: awq

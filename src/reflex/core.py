@@ -1,9 +1,25 @@
 import json
 from pathlib import Path
 from typing import List, Dict, Any
+
+import yaml
 from prime import reflex_ancestry
+from src.savepoint.logger import savepoint_log
+from src.serve import alerts, logging as slog
+from . import ledger
 
 BIAS_FILE = Path("logs") / "reflex_bias.json"
+POLICY_FILE = Path("configs/bankroll.yaml")
+RISK_FILE = Path("configs/risk.yaml")
+
+try:
+    POLICY = yaml.safe_load(POLICY_FILE.read_text())
+except Exception:
+    POLICY = {}
+try:
+    RISK = yaml.safe_load(RISK_FILE.read_text())
+except Exception:
+    RISK = {}
 
 class Reflex:
     """Simple Reflex engine applying scoring, learning and self-checks."""
@@ -15,6 +31,7 @@ class Reflex:
             self.source_bias = json.loads(BIAS_FILE.read_text())
         except Exception:
             self.source_bias = {}
+        self.policy = POLICY
 
     def score_proposal(
         self,
@@ -61,20 +78,72 @@ class Reflex:
         reflex_ancestry.append(record)
         return chosen
 
-    def self_check(self, decision: Dict[str, Any]) -> Dict[str, bool]:
+    def self_check(self, decision: Dict[str, Any]) -> Dict[str, Any]:
         """Run basic safety and resource checks before executing."""
 
         uses_local = decision.get("uses_local", True)
         uses_rag = decision.get("uses_rag", False)
+        bankroll = float(decision.get("bankroll", 0))
+        wager = float(decision.get("wager", 0))
+        pnl = ledger.day_pnl()
+        decision["day_win"] = max(pnl, 0.0)
+        decision["day_loss"] = max(-pnl, 0.0)
         checklist = {
-            "bankroll_ok": decision.get("bankroll", 0) >= 0,
+            "bankroll_ok": bankroll - wager >= 0,
+            "safety_ok": not decision.get("danger", False),
             "tool_needed": decision.get("needs_tool", False),
             "uses_local_or_rag": uses_local or uses_rag,
             "within_risk": decision.get("risk", 0) <= decision.get("risk_limit", 1),
         }
+
+        blocked = False
+        reason = ""
+        policy = self.policy
+        if policy:
+            allow = set(policy.get("allow_when_affect", []))
+            affect = decision.get("affect")
+            if allow and affect not in allow:
+                blocked = True
+                reason = "affect"
+            elif wager > bankroll * float(policy.get("unit_fraction", 1.0)):
+                blocked = True
+                reason = "unit"
+            elif decision["day_loss"] > bankroll * float(policy.get("stop_loss_daily", 1.0)):
+                blocked = True
+                reason = "stop_loss"
+            elif decision["day_win"] > bankroll * float(policy.get("stop_win_lock", 1.0)):
+                blocked = True
+                reason = "stop_win"
+        if not blocked and decision.get("risk_stats") and RISK:
+            stats = decision["risk_stats"]
+            if stats.get("drawdown_p95", 0) > float(RISK.get("max_drawdown_p95", 1.0)):
+                blocked = True
+                reason = "risk_drawdown"
+            elif stats.get("variance", 0) > float(RISK.get("max_variance", float("inf"))):
+                blocked = True
+                reason = "risk_variance"
+            elif stats.get("ev", 0) < float(RISK.get("require_ev_ge", -float("inf"))):
+                blocked = True
+                reason = "risk_ev"
+        checklist["policy_ok"] = not blocked
+        if blocked:
+            checklist["blocked"] = True
+            checklist["reason"] = reason
+            savepoint_log("risk_gate_block", {"reason": reason})
+            alerts.log_event("risk_gate_block", reason)
+            slog.alert("risk gate block", component="reflex", reason=reason)
+        else:
+            checklist["blocked"] = False
+            if wager:
+                ledger.record(wager, decision.get("outcome"))
+
         entry = {"self_check": checklist, "decision": decision}
         self.history.append(entry)
         reflex_ancestry.append(entry)
+        try:
+            savepoint_log("reflex_self_check", entry, decision.get("affect"), decision.get("bankroll"))
+        except Exception:
+            pass
         return checklist
 
     def feedback(self, source: str, success: bool) -> float:

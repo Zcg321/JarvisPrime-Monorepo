@@ -2,6 +2,7 @@ __pycache__/
 *.pyc
 logs/
 !logs/.gitkeep
+data/ghosts/*.json
 *.tgz
 .jarvis/
 .venv/

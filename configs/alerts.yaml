@@ -1,0 +1,5 @@
+subscriptions:
+  - role: "admin"
+    types: ["policy", "slo"]
+    notify: "stdout"
+webhooks: []

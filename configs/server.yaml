@@ -1,0 +1,19 @@
+port: 8000
+require_auth: true
+tokens:
+  - id: admin
+    token: ADMIN_TOKEN
+    role: admin
+  - id: user
+    token: USER_TOKEN
+    role: user
+  - id: test
+    token: TEST_TOKEN
+    role: admin
+rate:
+  rps: 100
+  burst: 100
+policies:
+  - role: user
+    allow: ["dfs_*", "voice_mirror"]
+    deny: ["chaos_harness", "dfs_portfolio"]

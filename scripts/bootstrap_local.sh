@@ -37,12 +37,8 @@ if [ "${JARVIS_SKIP_REPLAY:-0}" != "1" ]; then
     if ls logs/experience/*.json >/dev/null 2>&1; then
         echo "Replaying experience logs"
         python - <<'PY'
-import glob, json
-count = 0
-for path in glob.glob('logs/experience/*.json'):
-    with open(path) as f:
-        json.load(f)
-    count += 1
+from src.train import uptake
+count = len(uptake.replay())
 print(f"Replayed {count} experience logs")
 PY
     else

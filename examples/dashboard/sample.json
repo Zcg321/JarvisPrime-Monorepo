@@ -1,0 +1,7 @@
+{
+  "health": {"status": "ok"},
+  "metrics": {},
+  "alerts": [],
+  "audit": {"files": 0},
+  "lineage": {"savepoints": 0}
+}

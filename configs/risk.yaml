@@ -1,0 +1,3 @@
+max_drawdown_p95: 0.25
+max_variance: 2.0
+require_ev_ge: 0.0

@@ -1,0 +1,8 @@
+{
+  "message": "dfs_showdown",
+  "args": {
+    "slate_id": "SIM_SD",
+    "constraints": {"max_from_team": 3},
+    "stacks": {"captain_team": true, "bringback": true}
+  }
+}

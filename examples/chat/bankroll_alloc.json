@@ -1,0 +1,1 @@
+{"message":"bankroll_alloc","args":{"bankroll":1000.0,"unit_fraction":0.02,"slates":[{"id":"S1","type":"classic","entries":10,"avg_entry_fee":5.0,"edge_hint":0.08}]}}

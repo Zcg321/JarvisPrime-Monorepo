@@ -1,0 +1,9 @@
+goku:
+  leverage: 0.5
+vegeta:
+  base: 0.5
+  leverage: 1.0
+piccolo:
+  risk: 0.3
+gohan:
+  leverage: 0.25

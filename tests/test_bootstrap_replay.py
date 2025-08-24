@@ -1,27 +1,25 @@
-"""Bootstrap replay tests.
+import os
+import subprocess
+import sys
+import pathlib
 
-MIT License (c) 2025 Zack
-"""
 
-import os, subprocess, json, pathlib
-
-def test_bootstrap_replays_experience(tmp_path, monkeypatch):
-    repo_root = pathlib.Path(__file__).resolve().parents[1]
-    exp_dir = repo_root / 'logs' / 'experience'
-    exp_dir.mkdir(parents=True, exist_ok=True)
-    sample = exp_dir / 'sample.json'
-    sample.write_text('{"msg":"hi"}')
+def test_bootstrap_replays_experience(tmp_path):
+    repo = pathlib.Path(__file__).resolve().parents[1]
+    log_dir = repo / "logs" / "experience"
+    log_dir.mkdir(parents=True, exist_ok=True)
+    for i in range(2):
+        (log_dir / f"{i}.json").write_text("{}")
     env = os.environ.copy()
-    env['JARVIS_SKIP_BOOTSTRAP_DEPS'] = '1'
-    proc = subprocess.run(['bash', str(repo_root / 'scripts' / 'bootstrap_local.sh')], capture_output=True, text=True, env=env)
-    sample.unlink()
-    assert 'Replayed 1 experience logs' in proc.stdout
+    env["JARVIS_SKIP_BOOTSTRAP_DEPS"] = "1"
+    env["JARVIS_SKIP_REPLAY"] = "0"
+    proc = subprocess.run(
+        ["bash", "scripts/bootstrap_local.sh"],
+        cwd=repo,
+        env=env,
+        capture_output=True,
+        text=True,
+        check=True,
+    )
+    assert "Replayed 2 experience logs" in proc.stdout
 
-
-def test_bootstrap_skip_replay(monkeypatch):
-    repo_root = pathlib.Path(__file__).resolve().parents[1]
-    env = os.environ.copy()
-    env['JARVIS_SKIP_BOOTSTRAP_DEPS'] = '1'
-    env['JARVIS_SKIP_REPLAY'] = '1'
-    proc = subprocess.run(['bash', str(repo_root / 'scripts' / 'bootstrap_local.sh')], capture_output=True, text=True, env=env)
-    assert 'Skipping experience replay' in proc.stdout

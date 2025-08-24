@@ -1,0 +1,12 @@
+{
+  "message": "submit_plan",
+  "args": {
+    "slate_id": "DK_NBA_2025-10-25_MAIN",
+    "lineups": [],
+    "bankroll": 1000,
+    "unit_fraction": 0.02,
+    "entry_fee": 5.0,
+    "max_entries": 20,
+    "seed": 1337
+  }
+}

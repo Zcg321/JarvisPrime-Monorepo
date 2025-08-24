@@ -11,6 +11,15 @@ from src.core import anchors
 
 PHILOSOPHIES = anchors.load_all()["master"]["manifest"]["philosophies"]
 
+# Affect prompts gently bias the reflection tone. Only four states are
+# supported to keep the helper deterministic.
+AFFECT_PROMPTS = {
+    "calm": "What is the smallest next true step you can finish in 20 minutes?",
+    "anxious": "Take a deep breath; what small step will ease your mind?",
+    "confident": "Leverage your momentum; what's the next true step?",
+    "frustrated": "Pivot gently; what's one step that keeps progress honest?",
+}
+
 
 def _find_snippet(text: str) -> str:
     """Return philosophy snippet whose keywords appear in ``text``.
@@ -35,15 +44,17 @@ def _find_snippet(text: str) -> str:
     return ""
 
 
-def reflect(text: str) -> str:
-    """Return clarity statement optionally grounded in a philosophy."""
+def reflect(text: str, affect: str = "calm") -> str:
+    """Return clarity statement optionally grounded in a philosophy.
+
+    ``affect`` adjusts the guidance wording for the user. Unknown states fall
+    back to ``calm``.
+    """
 
     text = text.strip()
     snippet = _find_snippet(text)
-    base = (
-        f"Clarity: {text}. "
-        "What is the smallest next true step you can finish in 20 minutes?"
-    )
+    prompt = AFFECT_PROMPTS.get(affect, AFFECT_PROMPTS["calm"])
+    base = f"Clarity: {text}. {prompt}"
     if snippet:
         base = f"{base} {snippet}"
     return base
