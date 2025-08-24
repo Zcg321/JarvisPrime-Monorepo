@@ -1,0 +1,12 @@
+{% extends "base.html" %}
+{% block content %}
+<h1>Care Dashboard</h1>
+<p>Current streak: {{ streaks.current_streak_days }} days</p>
+<p>Longest streak: {{ streaks.longest_streak_days }} days</p>
+<p>Last 30 days - halted: {{ streaks.last_30.halted }}, slipped: {{ streaks.last_30.slipped }}</p>
+<ul>
+{% for c in recent %}
+  <li>{{ c.date }} - {{ c.status }}</li>
+{% endfor %}
+</ul>
+{% endblock %}

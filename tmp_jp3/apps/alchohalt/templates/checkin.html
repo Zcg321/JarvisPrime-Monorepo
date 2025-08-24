@@ -1,0 +1,10 @@
+{% extends "base.html" %}
+{% block content %}
+<h1>Check in</h1>
+<form method="post">
+  <label><input type="radio" name="status" value="halted" checked> Halted</label>
+  <label><input type="radio" name="status" value="slipped"> Slipped</label><br/>
+  <textarea name="note" maxlength="120"></textarea><br/>
+  <button type="submit">Submit</button>
+</form>
+{% endblock %}

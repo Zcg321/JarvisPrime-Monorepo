@@ -1,0 +1,14 @@
+[Unit]
+Description=Continuum Foreman Loop
+After=network.target
+
+[Service]
+Type=simple
+WorkingDirectory=/opt/foreman
+ExecStart=/usr/bin/python /opt/foreman/foreman_loop.py --watch
+Environment=OPENAI_API_KEY=changeme
+Environment=GT_TOKEN=changeme
+Restart=always
+
+[Install]
+WantedBy=multi-user.target

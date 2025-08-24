@@ -1,0 +1,14 @@
+repos:
+  YOURORG/alchohalt:
+    max_files: 20
+    max_runtime_sec: 600
+    allow_paths:
+      - "apps/alchohalt/**"
+      - "tests/**"
+      - "README.md"
+    deny_paths:
+      - "scripts/backup.sh"
+      - ".github/workflows/**"
+defaults:
+  max_files: 15
+  max_runtime_sec: 900
