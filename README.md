@@ -27,10 +27,11 @@ Start by copying [.env.example](.env.example) and filling in the values.
 
 All Python source now lives under [src/](src) with tests in [tests/](tests). Install in editable mode or set `PYTHONPATH=src` when running scripts.
 
-
 ## Alchohalt
 
-An experimental module for daily halt reminders and streak tracking.
+A minimal Python port of the planned **Alchohalt** tracker lives under [src/alchohalt](src/alchohalt). It records daily check-ins, calculates streaks, and logs reminder schedules.
+
+Example usage:
 
 ```python
 from alchohalt import checkin, metrics
@@ -57,4 +58,3 @@ python -m flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics
 PYTHONPATH=src python -m pytest
 python -m py_compile $(git ls-files '*.py')
 ```
-
