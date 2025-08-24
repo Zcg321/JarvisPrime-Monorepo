@@ -1,0 +1,35 @@
+name: Daily Module Generation
+
+on:
+  schedule:
+    # Run every day at 06:00 UTC (02:00 America/New_York)
+    - cron: '0 6 * * *'
+  workflow_dispatch:
+
+jobs:
+  generate:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+        with:
+          ref: ${{ github.ref }}
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+      - name: Generate daily reflex module
+        run: |
+          python flame_prime/daily_module_generator.py
+      - name: Commit and push changes
+        uses: EndBug/add-and-commit@v9
+        with:
+          author_name: Flame Prime Bot
+          author_email: bot@flame.prime
+          message: 'chore: generate daily reflex module'
+          add: 'flame_prime/ai/daily_modules/*.py'
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
