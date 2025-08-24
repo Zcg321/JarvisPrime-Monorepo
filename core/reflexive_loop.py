@@ -44,8 +44,8 @@ class ReflexiveLoop:
         self.metrics = {}
         self.running = True
 
-  def generate_metrics(self):
-    return generate_metrics_from_data()
+    def generate_metrics(self):
+        return generate_metrics_from_data()
 
     def loop(self):
         print("[Jarvis] Reflexive Loop Core Activated.")
