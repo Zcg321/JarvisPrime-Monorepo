@@ -1,0 +1,5 @@
+paths:
+  - path: logs/metrics
+    days: 1
+  - path: logs/audit
+    days: 1

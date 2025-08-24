@@ -20,8 +20,41 @@ make test
   Use `GET /list_tools_v2` for versioned schemas or the tool call `{"tool":"list_tools","args":{}}` for legacy names.
  - `dfs_portfolio` accepts `as_plan` plus bankroll inputs to emit a `submit_plan` result.
 - `GET /metrics/prom` returns Prometheus metrics.
+- `alchohalt.*` tools track daily halt check-ins and streaks.
+- Quotas track per-token usage with admin reset endpoints.
+- `roi_cohorts` aggregates ROI by slate and position cohorts.
+- `portfolio_ab` simulates A/B lineup sets to estimate lift.
+- `roi_attrib` estimates marginal player and pair contributions via Shapley-lite permutations.
+- `/autoscale/hint` suggests scale up/down based on metrics rollups.
+- `scripts/retention_gc.py` prunes old logs per `configs/retention.yaml`.
+- `/openapi.json` exposes a minimal spec for public endpoints.
 - Run `python scripts/release_bundle.py` to create a deployable tarball.
 - Server port configurable via `PORT` or `configs/server.yaml.port`; `/health` echoes the active port.
+- Token risk isolation logs ledger and savepoints under `logs/*/<token_id>` and returns `token_id` + `policy_version`.
+- Tokens without explicit policies fall back to global risk defaults; violations warn but do not block.
+- `lineup_agent` (flag `lineup_agent`) runs deterministic beam search over swaps.
+- ROI cohort drift detection emits WARN alerts and adds a ✦ badge in dashboard output.
+- Feature flags (`/flags`, `/flags/flip`) support on/off/canary; stable tools default to `on` and `POST /flags/flip` accepts `state` and `percent`; `sdk/python/jarvisprime` offers a tiny client.
+- Ghost DFS pools and ROI logs isolate per-token under `logs/ghosts/<token_id>` with deterministic seeding.
+- Legacy ghost ROI logs are honored via `ROI_LOG_DIR_LEGACY`; set `ROI_LOG_COMPAT_MIRROR=1` to mirror writes for back-compat.
+- `bankroll_ev` allocates entries via Monte Carlo EV with drawdown guards.
+- `lineup_agent_diverse` adds a diversity metric to beam exploration.
+- `submit_plan` stitches schedules, portfolios and `submit_sim` into a dry-run plan.
+- `portfolio_export` writes DraftKings CSV uploads alongside a manifest.
+- `offline_snapshot.py` and `offline_rerun.py` freeze configs/logs and verify SHA256 checks.
+- `lineup_cover` selects minimal lineup subsets meeting exposure targets.
+- Canary flags accept rollout percentages with hash-based token splits and auto-throttle.
+- `jarvisctl` CLI and SDK respect `JARVIS_BASE_URL`/`JARVIS_TOKEN` and retry on transient errors.
+- `portfolio_diversity` selects a diverse lineup subset maximizing ROI, leverage, and uniqueness.
+- `portfolio_dedupe` filters near-duplicate lineups using Hamming distance and ROI/leverage tie-breakers.
+- `late_swap` swaps scratched players post-lock using a deterministic replacement pool.
+- ROI carryover uses half-life schedules from `configs/roi_decay.yaml` for stable bias.
+- `/locks` returns slate lock times in UTC for admins; `cron_clock_drift.py` warns on clock skew.
+- `check_dk_export.py` validates DraftKings CSVs and `submit_bundle.py` packages uploads with checksums.
+- `submit_sim` projects bankroll outcomes via seeded Monte Carlo and reports guard violations.
+- `scripts/ghost_compact.py` snapshots per-token ghost shards with SHA256 manifests.
+- `scripts/roi_explain.py` links cohort stats with attribution results into JSON/HTML reports.
+- SDK helpers `stream_alerts()` (SSE) and `chat_batch()` support streaming alerts and batched chats.
 - Pytest fixture launches the server on dynamic ports to avoid address-in-use errors.
 - `scripts/audit_query.py` filters `logs/audit/*.jsonl` by token, tool, and time range; `--format csv` emits CSV and `--summary` shows counts.
 - `scripts/compliance.py purge --token-id TOKEN --since ISO --until ISO` redacts matching audit logs and savepoints (tombstones left); `export` bundles records for compliance requests.
@@ -117,6 +150,12 @@ Canonical names for `/chat` include `surgecell`, `voice_mirror`, `savepoint`, `s
 
 ### Recent additions
 
+- **Persistent metrics store** with hourly rollups and `/metrics/history` and `/metrics/rollup/latest` admin APIs.
+- **Ghost DFS ROI carryover** preloads multi-day EMAs from `logs/ghosts/roi_daily.jsonl` to bias rankings.
+- **User audit export** bundles filtered audit logs via `scripts/audit_export.py` or `GET /audit/export`.
+- **Self-healing indexes** track alerts, audit, lineage, and metrics logs with `/indexes/status` and `/indexes/rebuild`.
+
+Examples for these features live under `examples/`.
 - Voice Mirror appends a matching philosophy snippet to each reflection and accepts `affect` (`calm`, `anxious`, `confident`, `frustrated`) to bias tone.
 - `dfs_lineup` supports DraftKings NBA (`PG/SG/SF/PF/C/G/F/UTIL`) and showdown (`CPT/UTIL`) schemas and reports remaining budget.
 - `scripts/bootstrap_local.sh` replays any `logs/experience/*.json` entries during environment bootstrap.
@@ -161,7 +200,7 @@ Canonical names for `/chat` include `surgecell`, `voice_mirror`, `savepoint`, `s
 - Ascension phases are editable via `configs/ascension/phase_*.json` and can be queried with the `plan` tool.
 - Quant export: `python scripts/export_quant.py --model artifacts/base --out artifacts/quant --method awq`
 
-Anchors and mission DNA reside in `data/dna/`. Tool etiquette: JSON-only tool calls.
+Anchors and mission DNA reside in [`core/jarvisprime/`](core/jarvisprime/) (symlinked from `data/dna/`) and include [continuum_master_final.json](core/jarvisprime/continuum_master_final.json), [continuum_ascension_path.json](core/jarvisprime/continuum_ascension_path.json), [JarvisPrime_BootProtocol.md](core/jarvisprime/JarvisPrime_BootProtocol.md), and [continuum_true_endgame.json](core/jarvisprime/continuum_true_endgame.json). Tool etiquette: JSON-only tool calls.
 
 ## Endgame
 
@@ -172,6 +211,14 @@ Configuration is loaded via `src/config/loader.py`, merging YAML files in `confi
 
 ## Submit Plan & Savepoint Timeline
 Use `submit_plan` to dry-run entry counts under bankroll and risk policy. Run `scripts/savepoint_timeline.py` to consolidate savepoints into `logs/reports/savepoint_timeline.json`.
+`submit_plan` enforces a strict schema and returns `{plan, sim, status}` where
+`status` becomes "blocked" only when `submit_sim` reports violations. Dry-run
+tools (`submit_plan`, `submit_sim`, etc.) never 403; instead they emit WARN
+savepoints for audit.
+
+Savepoints keep per-token lineage pointers under
+`logs/savepoints/<token>/__last/<tool>.json` so consecutive calls form a stable
+parent chain.
 
 ## Metrics SLO
 `/metrics` now exposes SLO targets and remaining error budget.
@@ -183,3 +230,5 @@ Use `submit_plan` to dry-run entry counts under bankroll and risk policy. Run `s
 
 ## Compliance Verify
 Run `python scripts/compliance_verify.py` to rehash compliance receipt files. Results are written to `logs/compliance/verify_report.json`.
+
+See examples/chat/late_swap.json and examples/ops/dk_check.json for usage.

@@ -7,6 +7,7 @@ from typing import Any, Dict, Optional
 
 from src.core import anchors
 from . import lineage
+from src.reflex import policy
 
 LOG_DIR = Path("logs/savepoints")
 REDACT_KEYS = {"token", "api", "secret"}
@@ -27,8 +28,11 @@ def savepoint_log(
     payload: Dict[str, Any],
     affect: Optional[str] = None,
     bankroll: Optional[float] = None,
+    token_id: Optional[str] = None,
 ) -> tuple[Path, str]:
-    LOG_DIR.mkdir(parents=True, exist_ok=True)
+    token = token_id or policy.current_token()
+    log_dir = LOG_DIR / token if token != "anon" else LOG_DIR
+    log_dir.mkdir(parents=True, exist_ok=True)
     ts = time.gmtime()
     stamp = time.strftime("%Y%m%d_%H%M%S", ts)
     ts_iso = time.strftime("%Y-%m-%dT%H:%M:%SZ", ts)
@@ -48,7 +52,9 @@ def savepoint_log(
         "lineage_id": lineage_id,
         "parent_id": parent_id,
     }
-    fname = LOG_DIR / f"{stamp}_{safe_event}.json"
+    data["token_id"] = token
+    data["policy_version"] = policy.policy_version()
+    fname = log_dir / f"{stamp}_{safe_event}.json"
     tmp = fname.with_suffix(".tmp")
     with open(tmp, "w") as f:
         json.dump(data, f, sort_keys=True)
@@ -68,7 +74,7 @@ def savepoint_log(
 def rotate_logs(keep: int = MAX_KEEP, days: int = MAX_DAYS) -> int:
     """Delete savepoints exceeding ``keep`` or older than ``days``."""
 
-    files = sorted(LOG_DIR.glob("*.json"))
+    files = sorted(LOG_DIR.glob("**/*.json"))
     cutoff = time.time() - days * 86400
     remove = files[:-keep] if len(files) > keep else []
     for f in files:

@@ -1,0 +1,4 @@
+{
+  "message": "roi_cohorts",
+  "args": {"lookback_days": 90, "group_by": ["slate_type", "position_bucket"]}
+}

@@ -3,18 +3,32 @@ import random
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 
-DATA_DIR = Path("data/ghosts")
-ROI_LOG = Path("logs/ghosts/roi.jsonl")
+import os
+import json
+import random
+from pathlib import Path
+from typing import List, Dict, Any, Optional
+
+from src.tools.ghost import token_dir, deterministic_seed, LEGACY_ROOT
+
+DATA_DIR = LEGACY_ROOT
+ROI_LOG = LEGACY_ROOT / "roi.jsonl"
 ROSTER_CLASSIC = ["PG", "SG", "SF", "PF", "C", "G", "F", "UTIL"]
 
 
-def _rng(seed: int, slate_id: str) -> random.Random:
-    return random.Random(f"{slate_id}:{seed}")
+def _rng(seed: int, slate_id: str, token_id: str) -> random.Random:
+    return random.Random(deterministic_seed(token_id, slate_id, seed))
 
 
-def seed_pool(slate_id: str, seed: int, pool_size: int = 50) -> List[Dict[str, Any]]:
-    rng = _rng(seed, slate_id)
-    DATA_DIR.mkdir(parents=True, exist_ok=True)
+def seed_pool(
+    slate_id: str,
+    seed: int,
+    pool_size: int = 50,
+    token_id: Optional[str] = None,
+) -> List[Dict[str, Any]]:
+    token_id = token_id or "anon"
+    rng = _rng(seed, slate_id, token_id)
+    dir_path = token_dir(token_id)
     pool: List[Dict[str, Any]] = []
     for i in range(pool_size):
         lineup = []
@@ -33,7 +47,7 @@ def seed_pool(slate_id: str, seed: int, pool_size: int = 50) -> List[Dict[str, A
             "salary_total": total,
             "leftover": 50000 - total,
         })
-    (DATA_DIR / f"{slate_id}_{seed}_seed.json").write_text(json.dumps(pool))
+    (dir_path / f"{slate_id}_{seed}_seed.json").write_text(json.dumps(pool))
     return pool
 
 
@@ -42,14 +56,21 @@ def mutate_pool(
     seed: int,
     constraints: Optional[Dict[str, Any]] = None,
     cap: int = 50000,
+    token_id: Optional[str] = None,
 ) -> List[Dict[str, Any]]:
     constraints = constraints or {}
-    file = DATA_DIR / f"{slate_id}_{seed}_seed.json"
+    token_id = token_id or "anon"
+    dir_path = token_dir(token_id)
+    file = dir_path / f"{slate_id}_{seed}_seed.json"
     if file.exists():
         pool = json.loads(file.read_text())
     else:
-        pool = seed_pool(slate_id, seed)
-    rng = _rng(seed + 1, slate_id)
+        legacy = DATA_DIR / f"{slate_id}_{seed}_seed.json"
+        if legacy.exists():
+            pool = json.loads(legacy.read_text())
+        else:
+            pool = seed_pool(slate_id, seed, token_id=token_id)
+    rng = _rng(seed + 1, slate_id, token_id)
     mutated: List[Dict[str, Any]] = []
     for item in pool:
         lineup = item["players"]
@@ -68,13 +89,19 @@ def mutate_pool(
     return mutated
 
 
-def roi_log(slate_id: str, lineup_id: str, entries: int, profit: float) -> None:
-    ROI_LOG.parent.mkdir(parents=True, exist_ok=True)
+def roi_log(
+    slate_id: str, lineup_id: str, entries: int, profit: float, token_id: Optional[str] = None
+) -> None:
+    token_id = token_id or "anon"
+    log_path = token_dir(token_id) / "roi.jsonl"
     rec = {
         "slate_id": slate_id,
         "lineup_id": lineup_id,
         "entries": entries,
         "profit": profit,
     }
-    with ROI_LOG.open("a") as f:
+    with log_path.open("a") as f:
         f.write(json.dumps(rec) + "\n")
+    if os.environ.get("ROI_LOG_COMPAT_MIRROR") == "1":
+        with ROI_LOG.open("a") as f:
+            f.write(json.dumps(rec) + "\n")

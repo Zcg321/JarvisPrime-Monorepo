@@ -6,20 +6,16 @@ import yaml
 from prime import reflex_ancestry
 from src.savepoint.logger import savepoint_log
 from src.serve import alerts, logging as slog
-from . import ledger
+from . import ledger, policy as risk_policy
 
 BIAS_FILE = Path("logs") / "reflex_bias.json"
 POLICY_FILE = Path("configs/bankroll.yaml")
-RISK_FILE = Path("configs/risk.yaml")
 
 try:
     POLICY = yaml.safe_load(POLICY_FILE.read_text())
 except Exception:
     POLICY = {}
-try:
-    RISK = yaml.safe_load(RISK_FILE.read_text())
-except Exception:
-    RISK = {}
+RISK = POLICY
 
 class Reflex:
     """Simple Reflex engine applying scoring, learning and self-checks."""
@@ -114,22 +110,27 @@ class Reflex:
             elif decision["day_win"] > bankroll * float(policy.get("stop_win_lock", 1.0)):
                 blocked = True
                 reason = "stop_win"
-        if not blocked and decision.get("risk_stats") and RISK:
+
+        tp = risk_policy.get_policy(risk_policy.current_token())
+        explicit = tp.pop("_explicit", False)
+        bankroll = float(tp.get("bankroll", bankroll))
+        if not blocked and decision.get("risk_stats"):
             stats = decision["risk_stats"]
-            if stats.get("drawdown_p95", 0) > float(RISK.get("max_drawdown_p95", 1.0)):
-                blocked = True
-                reason = "risk_drawdown"
-            elif stats.get("variance", 0) > float(RISK.get("max_variance", float("inf"))):
-                blocked = True
-                reason = "risk_variance"
-            elif stats.get("ev", 0) < float(RISK.get("require_ev_ge", -float("inf"))):
-                blocked = True
-                reason = "risk_ev"
+            exceeded = (
+                stats.get("drawdown_p95", 0) > float(tp.get("max_drawdown_p95", float("inf")))
+                or stats.get("variance", 0) > float(tp.get("max_variance", float("inf")))
+                or stats.get("ev", 0) < float(tp.get("require_ev_ge", -float("inf")))
+            )
+            if exceeded:
+                reason = "risk_policy"
+                if explicit:
+                    blocked = True
+                else:
+                    alerts.log_event("risk_policy", reason, severity="WARN")
         checklist["policy_ok"] = not blocked
         if blocked:
             checklist["blocked"] = True
             checklist["reason"] = reason
-            savepoint_log("risk_gate_block", {"reason": reason})
             alerts.log_event("risk_gate_block", reason)
             slog.alert("risk gate block", component="reflex", reason=reason)
         else:
@@ -141,9 +142,25 @@ class Reflex:
         self.history.append(entry)
         reflex_ancestry.append(entry)
         try:
-            savepoint_log("reflex_self_check", entry, decision.get("affect"), decision.get("bankroll"))
+            savepoint_log(
+                "reflex_self_check",
+                entry,
+                decision.get("affect"),
+                decision.get("bankroll"),
+            )
         except Exception:
             pass
+        checklist["policy_version"] = risk_policy.policy_version()
+        checklist["token_id"] = risk_policy.current_token()
+        savepoint_log(
+            "risk_gate",
+            {
+                "policy_version": checklist["policy_version"],
+                "token_id": checklist["token_id"],
+                "decision": "deny" if checklist["blocked"] else "allow",
+                "reason": checklist.get("reason", ""),
+            },
+        )
         return checklist
 
     def feedback(self, source: str, success: bool) -> float:
@@ -168,3 +185,42 @@ class Reflex:
             BIAS_FILE.write_text(json.dumps(self.source_bias))
         except Exception:
             pass
+
+
+def risk_check(stats: Dict[str, float]) -> None:
+    """Raise ``RiskViolation`` if stats exceed policy for explicit tokens."""
+    tp = risk_policy.get_policy(risk_policy.current_token())
+    explicit = tp.pop("_explicit", False)
+    tool = risk_policy.current_tool()
+    if tool in risk_policy.DRY_RUN_TOOLS:
+        alerts.log_event("risk_policy", "dry_run_bypass", severity="WARN")
+        savepoint_log(
+            "risk_policy_bypass",
+            {
+                "tool": tool,
+                "token_id": risk_policy.current_token(),
+                "policy_version": risk_policy.policy_version(),
+            },
+        )
+        return
+    if not explicit:
+        return
+    if stats.get("drawdown_p95", 0) > float(tp.get("max_drawdown_p95", 1.0)):
+        raise risk_policy.RiskViolation("risk_policy")
+    if stats.get("variance", 0) > float(tp.get("max_variance", float("inf"))):
+        raise risk_policy.RiskViolation("risk_policy")
+    if stats.get("ev", 0) < float(tp.get("require_ev_ge", -float("inf"))):
+        raise risk_policy.RiskViolation("risk_policy")
+
+
+def gate_submit_sim(stats: Dict[str, float]) -> List[str]:
+    """Return risk policy violations for submit simulations.
+
+    This wraps ``risk_check`` but captures violations instead of raising so
+    tools can surface reasons without aborting the request.
+    """
+    try:
+        risk_check(stats)
+        return []
+    except risk_policy.RiskViolation:
+        return ["risk_policy"]

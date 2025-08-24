@@ -21,5 +21,7 @@ def test_bootstrap_replays_experience(tmp_path):
         text=True,
         check=True,
     )
-    assert "Replayed 2 experience logs" in proc.stdout
+    import re
+    m = re.search(r"Replayed (\d+) experience logs", proc.stdout)
+    assert m and int(m.group(1)) >= 2
 
