@@ -1,0 +1,1 @@
+{"message":"bankroll_ev","args":{"bankroll":500,"contests":[{"slate_id":"DK_NBA_2025-10-25_MAIN","type":"classic","entry_fee":5.0,"max_entries":20,"iters":1000}],"kelly_fraction":0.25,"drawdown_guard_p95":0.25,"seed":1337}}

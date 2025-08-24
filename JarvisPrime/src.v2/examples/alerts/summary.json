@@ -1,0 +1,4 @@
+{
+  "severity": {"INFO": 1, "WARN": 2, "ERROR": 0},
+  "type": {"policy": 2, "compliance": 1}
+}

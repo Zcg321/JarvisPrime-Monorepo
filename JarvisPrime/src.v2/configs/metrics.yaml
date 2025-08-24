@@ -1,0 +1,10 @@
+avg_latency_ms_fp16: 1000
+avg_latency_ms_int8: 1000
+error_rate: 0.2
+requests_per_min: 120
+slo:
+  availability: 0.995
+  p95_latency_int8: 2000
+  p95_latency_fp16: 2000
+  error_budget_day: 5
+  error_budget_week: 20

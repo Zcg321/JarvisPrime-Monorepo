@@ -1,0 +1,9 @@
+# extends nova_1p3b.yaml for 4k inference via RoPE L-Interpolation
+vocab_size: 50000
+max_seq_len: 4096
+rope_interp_base_ctx: 2048
+d_model: 2048
+n_layers: 24
+n_heads: 16
+ffn_mult: 4.0
+rope_base: 10000

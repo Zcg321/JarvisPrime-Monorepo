@@ -1,0 +1,7 @@
+{
+  "ts": "2025-10-25T00:00:00Z",
+  "action": "purge",
+  "token_id": "user1",
+  "count": 3,
+  "hash": "abcd1234"
+}

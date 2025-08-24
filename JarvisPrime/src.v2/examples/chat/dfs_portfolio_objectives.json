@@ -1,0 +1,8 @@
+{
+  "message": "dfs_portfolio",
+  "args": {
+    "slates": [{"id": "SIM", "type": "classic"}],
+    "n_lineups": 3,
+    "objectives": {"roi_gain": 3, "leverage_gain": 2, "exposure_penalty": 1}
+  }
+}

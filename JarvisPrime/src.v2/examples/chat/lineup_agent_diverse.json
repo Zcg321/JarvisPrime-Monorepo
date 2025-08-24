@@ -1,0 +1,1 @@
+{"message":"lineup_agent_diverse","args":{"seed_lineup":{"players":[]},"beam":4,"depth":2,"constraints":{"max_from_team":3},"metric":"jaccard","seed":1337}}

@@ -1,0 +1,11 @@
+[build-system]
+requires = ["setuptools"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "jarvisprime"
+version = "0.1.0"
+description = "JarvisPrime SDK"
+
+[project.scripts]
+jarvisctl = "cli.jarvisctl:main"

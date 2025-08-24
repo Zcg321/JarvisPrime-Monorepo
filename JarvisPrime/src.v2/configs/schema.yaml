@@ -1,0 +1,33 @@
+type: object
+properties:
+  bankroll:
+    type: object
+    properties:
+      unit_fraction:
+        type: number
+    additionalProperties: true
+  foo:
+    type: object
+    properties:
+      bar:
+        type: integer
+    additionalProperties: true
+  server:
+    type: object
+    properties:
+      require_auth:
+        type: boolean
+      tokens:
+        type: array
+        items:
+          type: string
+      rate:
+        type: object
+        properties:
+          rps:
+            type: number
+          burst:
+            type: number
+        additionalProperties: true
+    additionalProperties: true
+additionalProperties: true
