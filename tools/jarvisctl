@@ -1,0 +1,11 @@
+#!/usr/bin/env bash
+set -e
+
+case "$1" in
+  test)
+    make test ;;
+  lint)
+    make lint ;;
+  *)
+    echo "usage: jarvisctl [test|lint]" ;;
+esac
