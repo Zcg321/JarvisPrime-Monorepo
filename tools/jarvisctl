@@ -1,0 +1,21 @@
+#!/usr/bin/env python3
+import argparse, os, subprocess, sys
+ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
+def sh(*cmd): print("+"," ".join(cmd)); subprocess.check_call(cmd, cwd=ROOT)
+def main():
+  ap=argparse.ArgumentParser(); sp=ap.add_subparsers(dest="cmd", required=True)
+  sp.add_parser("lint"); sp.add_parser("test"); r=sp.add_parser("run")
+  r.add_argument("--pkg",choices=["v1","v2","v3"],default="v2"); r.add_argument("args",nargs=argparse.REMAINDER)
+  a=ap.parse_args()
+  if a.cmd=="lint":
+      try: sh(sys.executable,"-m","ruff","check",".")
+      except Exception: sh(sys.executable,"-m","flake8", ".")
+  elif a.cmd=="test":
+      sh(sys.executable,"-m","pytest")
+  else:
+      m={"v1":"JarvisPrime/src","v2":"JarvisPrime/src.v2","v3":"JarvisPrime/src.v3"}
+      tgt=os.path.join(ROOT,m[a.pkg]); os.chdir(tgt)
+      args=a.args or ["--","python","-c","print('ok')"]
+      if args and args[0]=="--": args=args[1:]
+      os.execvp(args[0],args)
+if __name__=="__main__": main()

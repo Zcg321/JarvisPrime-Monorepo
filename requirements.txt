@@ -1,9 +1,3 @@
-requests
-yfinance
-ccxt
-pandas
-numpy
-vaderSentiment
-websockets
-python-dotenv
+pytest
+ruff
 flake8
