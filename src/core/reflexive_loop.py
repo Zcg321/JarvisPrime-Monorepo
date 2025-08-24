@@ -4,8 +4,27 @@ import random
 import time
 import threading
 from data_intake import generate_metrics_from_data
-from reflex_chain_handler_final import trigger_reflex_chain  # Trigger chain logic here
-from core.surgecell_monitor import allocate_power
+
+# === SurgeCell Lite ===
+def surgecell_allocate(task):
+    load_factor = random.uniform(0.7, 1.0)
+    print(f"[SurgeCell] Allocating resources to {task}. Load factor: {load_factor:.2f}")
+
+# === Council AI Functions (Lite) ===
+def goku_boost(weight):
+    return weight * 1.05
+
+def gohan_support(metrics):
+    metrics['consistency'] *= 1.1
+    return metrics
+
+def vegeta_challenge(metrics):
+    metrics['edge_discovery'] *= 1.15
+    return metrics
+
+def piccolo_harmonize(metrics):
+    metrics['variance'] *= 0.9
+    return metrics
 
 # === Reflexive Functions ===
 def adjust_aggression(profit):
@@ -25,19 +44,14 @@ class ReflexiveLoop:
         self.metrics = {}
         self.running = True
 
-    def sleep_cycle(self, seconds):
-        time.sleep(seconds)
-
     def generate_metrics(self):
         return generate_metrics_from_data()
 
     def loop(self):
         print("[Jarvis] Reflexive Loop Core Activated.")
         while self.running:
-            allocate_power("Reflexive Loop", "normal")  # SurgeCell status
+            surgecell_allocate("Reflexive Loop")
             self.metrics = self.generate_metrics()
-            score = evaluate_logic(self.metrics)  # Evaluate before Council tweaks
-            self.metrics = trigger_reflex_chain("Reflexive Loop", ["goku", "gohan", "vegeta", "piccolo"])  # Call reflex chain handler
             profit = self.metrics["profitability"]
             adjust_aggression(profit)
             register_logic(self.metrics)

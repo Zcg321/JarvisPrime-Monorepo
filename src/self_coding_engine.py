@@ -5,7 +5,7 @@ import sys
 import io
 from core.surgecell_monitor import allocate_power
 from core.savepoint_manager import save_state
-from reflexive_loop import evaluate_logic
+from core.reflexive_loop import evaluate_logic
 
 def self_code(command):
     if command.startswith("build "):
