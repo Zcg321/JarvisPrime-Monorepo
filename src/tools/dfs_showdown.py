@@ -7,6 +7,7 @@ from .dfs import (
 )
 from .dfs_scoring import adjust_projection
 from .roi_cache import load_ema
+from . import ghost_roi
 
 
 def showdown_lineup(
@@ -48,6 +49,14 @@ def showdown_lineup(
         elif name in ema:
             bias = max(min(ema[name], 0.25), -0.15)
             proj *= 1 + bias
+        if roi_bias:
+            carry = ghost_roi.load_ema(
+                name,
+                "showdown",
+                int(roi_bias.get("lookback_days", 90)),
+                float(roi_bias.get("alpha", 0.35)),
+            )
+            proj *= 1 + carry
         gap = float(p.get("ownership_gap", 0.0))
         corr = float(p.get("corr_util", 0.0))
         leverage_boost = 0.5 * gap + 0.5 * corr

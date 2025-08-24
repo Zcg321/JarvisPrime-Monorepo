@@ -8,7 +8,7 @@ REPORT_PATH = Path('logs/reports/savepoint_timeline.json')
 
 
 def _list_savepoints():
-    for p in sorted(SAVEPOINT_DIR.glob('*.json')):
+    for p in sorted(SAVEPOINT_DIR.rglob('*.json')):
         try:
             data = json.loads(p.read_text())
         except Exception:

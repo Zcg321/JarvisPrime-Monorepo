@@ -14,7 +14,9 @@ def test_seed_deterministic(monkeypatch, tmp_path):
 
 def test_mutate_and_roi(monkeypatch, tmp_path):
     monkeypatch.setattr(ghost_dfs, "DATA_DIR", tmp_path)
+    monkeypatch.setattr(ghost_dfs, "token_dir", lambda tid=None: tmp_path)
     monkeypatch.setattr(ghost_dfs, "ROI_LOG", tmp_path / "roi.jsonl")
+    monkeypatch.setenv("ROI_LOG_COMPAT_MIRROR", "1")
     pool = ghost_dfs.seed_pool("SLATE", 1, pool_size=2)
     mutated = ghost_dfs.mutate_pool("SLATE", 1, cap=50000)
     assert len(mutated) == len(pool)
@@ -23,5 +25,5 @@ def test_mutate_and_roi(monkeypatch, tmp_path):
         assert lu["leftover"] == 50000 - lu["salary_total"]
         assert len(lu["players"]) == len(ghost_dfs.ROSTER_CLASSIC)
     ghost_dfs.roi_log("SLATE", "L0", 3, 10.0)
-    text = (tmp_path / "roi.jsonl").read_text().strip()
+    text = (tmp_path / "roi.jsonl").read_text().strip().splitlines()[0]
     assert json.loads(text)["lineup_id"] == "L0"

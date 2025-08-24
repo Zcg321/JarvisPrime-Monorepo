@@ -21,7 +21,13 @@ def list_last(n: int = 5):
     """Return the most recent ``n`` savepoints."""
 
     SAVE_DIR.mkdir(parents=True, exist_ok=True)
-    files = sorted(SAVE_DIR.glob("*.json"))
+    files = []
+    for p in SAVE_DIR.iterdir():
+        if p.is_file() and p.suffix == ".json":
+            files.append(p)
+        elif p.is_dir():
+            files.extend(sorted(p.glob("*.json")))
+    files.sort()
     data = []
     for p in files[-n:]:
         try:

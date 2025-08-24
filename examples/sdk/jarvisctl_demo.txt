@@ -1,0 +1,2 @@
+jarvisctl health
+jarvisctl chat --message lineup_agent --args '{}'
