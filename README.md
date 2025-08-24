@@ -49,6 +49,11 @@ python -m alchohalt.cli schedule 21:00
 
 Run `python -m pytest tests/test_alchohalt.py` to verify basic streak logic.
 
+## Voice Interface (experimental)
+
+An early voice interface lives at [src/core/jarvis_prime_gui.py](src/core/jarvis_prime_gui.py). It relies on the [Vosk](https://alphacephei.com/vosk) speech model.
+Download `vosk-model-small-en-us-0.15` separately and place it in the project root before running the script.
+
 ## Development
 
 Before committing, run the linters and test suite:

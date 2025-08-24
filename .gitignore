@@ -17,6 +17,7 @@ bin/
 jarvis_logs_*.txt
 jarvisprime_core.zip
 vosk-model-small-en-us-0.15.zip
+vosk-model-small-en-us-0.15/
 
 # Ignore user secrets
 private_key.pem
