@@ -62,7 +62,6 @@
 - Persist `alchohalt` state to disk and integrate a real scheduler or API route.
 - Implement reminder scheduling and UI components for Alchohalt.
 - Establish formatting and linting workflows.
-<<<<<<< HEAD
 ## 2025-08-24
 - Removed large Vosk model archive from version control and added the extracted directory to `.gitignore`.
 - Moved the experimental `jarvis_prime_gui.py` into `src/core` and documented the Vosk model download in the README.
