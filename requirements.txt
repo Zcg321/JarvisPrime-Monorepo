@@ -1,1 +1,9 @@
 requests
+yfinance
+ccxt
+pandas
+numpy
+vaderSentiment
+websockets
+python-dotenv
+flake8
